@@ -4,7 +4,6 @@ import tkinter.font as tkFont
 from PIL import Image, ImageTk
 import paho.mqtt.client as mqtt
 import pytweening as pt
-from pygame.time import Clock
 import numpy as np
 import os
 import ctypes
@@ -63,11 +62,25 @@ class InitiativeWindow(tk.Toplevel):
         upper_frame = ttk.Frame(self)
         lower_frame = ttk.Frame(self)
         
-        tmp_canvas = tk.Canvas(upper_frame, bg = "#0000FF", width = 300, height = 300)
-        tmp_canvas.pack()
+        #tmp_canvas = tk.Canvas(upper_frame, bg = "#0000FF", width = 300, height = 300)
+        #tmp_canvas.pack()
         
-        initiative_list = ttk.Listbox(upper_frame)
-        initiative_list.grid(row = 0, column = 0)
+        self.initiative_list = tk.Listbox(upper_frame)
+        self.initiative_list.grid(row = 0, column = 0)
+        
+        button_frame_left = tk.Frame(upper_frame)
+        button_frame_left.grid(row = 0, column = 1)
+        
+        drop_btn = ttk.Button(button_frame_left, text = "Drop")
+        drop_btn.grid(column = 0, row = 0)
+        
+        buffer_frame = tk.Frame(button_frame_left)
+        buffer_frame.grid(column = 0, row = 1, rowspan = 2, pady = 80)
+        
+        move_up_btn = ttk.Button(button_frame_left, text = "Move Up")
+        move_up_btn.grid(column = 0, row = 3)
+        move_down_btn = ttk.Button(button_frame_left, text = "Move Down")
+        move_down_btn.grid(column = 0, row = 4)
         
         
         
@@ -75,9 +88,10 @@ class InitiativeWindow(tk.Toplevel):
         #self.display_canvas.pack(expand = 1, fill = tk.BOTH)
         self.display_canvas.grid(row = 4, column = 0, columnspan = 5)
         
-        upper_frame.pack()
-        lower_frame.pack()
-        
+        #upper_frame.pack()
+        upper_frame.grid(row = 0, column = 0, sticky = "w")
+        #lower_frame.pack()
+        lower_frame.grid(row = 1, column = 0)
 
 
 
