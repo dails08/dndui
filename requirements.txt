@@ -3,3 +3,7 @@ tk
 pytweening
 numpy
 paho-mqtt
+loguru
+pyperclip
+beautifulsoup4
+requests

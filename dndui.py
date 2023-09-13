@@ -1,13 +1,19 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 import tkinter.font as tkFont
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageGrab
 import paho.mqtt.client as mqtt
 import pytweening as pt
+from bs4 import BeautifulSoup
+from loguru import logger
+import pyperclip
 import numpy as np
 import os
 import ctypes
 import json
+import requests
+from io import BytesIO
+
 
 ctypes.windll.shcore.SetProcessDpiAwareness(1)
 
@@ -20,78 +26,126 @@ def on_connect(client, userdata, flags, rc):
     print("Connected with result code " + str(rc))
     print("Subscribing to topic","dnd")
     print(client.subscribe("dnd"))
-
-
-def parse_dndb():
-    avatar_imgs = []
-    render_list = []
-
-    print("Looking for avatars...", end = "")
-    # Find the combat cards
-    html = pyperclip.paste()
-    # print(html)
-    soup = BeautifulSoup(html)
-    # avatars_list = soup.find_all("div", class_ = "combatant-summary__avatar")
-    avatars_list = soup.find_all("div", class_ = "combatant-card__mid-bit combatant-summary")
     
-    
-    print("done, found " + str(len(avatars_list)))
-    for avatar in avatars_list:
-        _src = avatar.img['src']
-        print(_src)
-        if _src not in img_library.keys():
-            content = requests.get(avatar.img['src']).content
-            img_library[_src] = content
-        else:
-            content = img_library[_src]
-        image_data = BytesIO(content)
-        _img = pygame.transform.smoothscale(pygame.image.load(image_data), (100,100))
-        avatar_imgs.append(_img)
+def pull_image_from_clipboard():
+    return im
+
+
+
+class LogWindow(tk.Toplevel):
+    def __init__(self):
+        super().__init__(height = 500, width = 1500)
+        self.title("Log Window")
         
-        avatar_name = avatar.find_all("div", class_ = "combatant-summary__name")[0].string
-        render_list.append((_img, avatar_name))
+        self.log = tk.Text(self)
+        self.log.place(x = 0, y = 0, height = 500, width = 1500)
+        
 
 
 
 class InitiativeWindow(tk.Toplevel):
     def __init__(self):
-        super().__init__()
+        super().__init__(height = 600, width = 1800)
         self.resizable(0,0)
         self.title("Initiative Display")
         
-        upper_frame = ttk.Frame(self)
-        lower_frame = ttk.Frame(self)
+        self.render_list = []
+        
+        def InitiativeSet():
+            pass
+        
+        self.upper_frame = ttk.Frame(self)
+        self.lower_frame = ttk.Frame(self)
         
         #tmp_canvas = tk.Canvas(upper_frame, bg = "#0000FF", width = 300, height = 300)
         #tmp_canvas.pack()
         
-        self.initiative_list = tk.Listbox(upper_frame)
-        self.initiative_list.grid(row = 0, column = 0)
-        
-        button_frame_left = tk.Frame(upper_frame)
-        button_frame_left.grid(row = 0, column = 1)
-        
-        drop_btn = ttk.Button(button_frame_left, text = "Drop")
-        drop_btn.grid(column = 0, row = 0)
-        
-        buffer_frame = tk.Frame(button_frame_left)
-        buffer_frame.grid(column = 0, row = 1, rowspan = 2, pady = 80)
-        
-        move_up_btn = ttk.Button(button_frame_left, text = "Move Up")
-        move_up_btn.grid(column = 0, row = 3)
-        move_down_btn = ttk.Button(button_frame_left, text = "Move Down")
-        move_down_btn.grid(column = 0, row = 4)
+        self.initiative_list = tk.Listbox(self.upper_frame)
+        #self.initiative_list.grid(row = 0, column = 0, sticky = "ns")
+        self.initiative_list.place(x = 0, y = 0, height = 300, width = 400)
         
         
+        def parse_dndb():
+            logger.debug("Parsing dndb content")
+            avatar_imgs = []
+            render_list = []
+
+            logger.debug("Looking for avatars...")
+            # Find the combat cards
+            html = pyperclip.paste()
+            # print(html)
+            soup = BeautifulSoup(html)
+            # avatars_list = soup.find_all("div", class_ = "combatant-summary__avatar")
+            avatars_list = soup.find_all("div", class_ = "combatant-card__mid-bit combatant-summary")
+            
+            
+            logger.debug("done, found " + str(len(avatars_list)))
+            for avatar in avatars_list:
+                content = requests.get(avatar.img['src']).content
+                image_data = BytesIO(content)
+                img = ImageTk.PhotoImage(Image.open(image_data).resize((250,250)))
+                avatar_imgs.append(img)
+                
+                avatar_name = avatar.find_all("div", class_ = "combatant-summary__name")[0].string
+                render_list.append((img, avatar_name))
+                logger.debug("Parsed 1.")
+            self.render_list = render_list
+            logger.debug("Set internal render list")
+            self.initiative_list.delete(0, self.initiative_list.size()-1)
+            for elem in self.render_list:
+                self.initiative_list.insert(tk.END, elem[1])
+            logger.debug("Set new initiative list contents.")
+            
+        pull_initiative_btn = ttk.Button(self.upper_frame, text = "Pull Order", command = parse_dndb)
+        pull_initiative_btn.place(x = 410, y = 0)
         
-        self.display_canvas = tk.Canvas(lower_frame, bg = "#00FF00", width = 1800, height = 300)
+        ship_btn = ttk.Button(self.upper_frame, text = "Ship")
+        ship_btn.place(x = 410, y = 40)
+
+        drop_btn = ttk.Button(self.upper_frame, text = "Drop")
+        drop_btn.place(x = 410, y = 170)
+        
+
+        
+        move_up_btn = ttk.Button(self.upper_frame, text = "Move Up")
+        move_up_btn.place(x = 410, y = 210)
+        
+        move_down_btn = ttk.Button(self.upper_frame, text = "Move Down")
+        move_down_btn.place(x = 410, y = 250)
+        
+        self.prep_name = ttk.Entry(self.upper_frame, text = "Name")
+        self.prep_name.place(x = 1500, y = 0, width = 250)
+        
+        def pull_pic_fcn():
+            im = ImageGrab.grabclipboard()
+            logger.debug("Pulled from clipboard")
+            if im:
+                self.prep_img_be = ImageTk.PhotoImage(im.resize((250,250)))
+                self.prep_img_cv = self.prep_canvas.create_image(0,0, image = self.prep_img_be, anchor = "nw")
+
+        
+        self.pull_pic_btn = ttk.Button(self.upper_frame, text = "Pull Pic", command = pull_pic_fcn)
+        self.pull_pic_btn.place(x = 1500, y = 30, anchor = "ne", width = 100)
+        
+        
+        self.add_above_btn = ttk.Button(self.upper_frame, text = "Add Above")
+        self.add_above_btn.place(x = 1500, y = 70, anchor = "ne", width = 100)
+        self.add_below_btn = ttk.Button(self.upper_frame, text = "Add Below")
+        self.add_below_btn.place(x = 1500, y = 110, anchor = "ne", width = 100)
+        self.prep_canvas = tk.Canvas(self.upper_frame, bg = "#000000", width = 300, height = 300)
+        self.prep_canvas.place(x = 1500, y = 30, width = 250, height = 250)
+        
+        
+        
+        
+        self.display_canvas = tk.Canvas(self.lower_frame, bg = "#00FF00", width = 1800, height = 300)
         #self.display_canvas.pack(expand = 1, fill = tk.BOTH)
         self.display_canvas.grid(row = 4, column = 0, columnspan = 5)
         
         #upper_frame.pack()
-        upper_frame.grid(row = 0, column = 0, sticky = "w")
+        self.upper_frame.place(x = 0, y = 0, height = 300, width = 1800)
         #lower_frame.pack()
-        lower_frame.grid(row = 1, column = 0)
+        self.lower_frame.place(x = 0, y = 300, height = 300, width = 1800)
 
 
 
@@ -123,7 +177,13 @@ tabControl.pack(expand = 1, fill = "both")
 ttk.Label(tab1, text = "Tab1").grid(column = 0, row = 0, padx = 30, pady = 30)
 ttk.Label(tab2, text = "Tab2").grid(column = 0, row = 0, padx = 30, pady = 30)
 
+logWindow = LogWindow()
 
+def write_log(msg):
+    global logWindow
+    logWindow.log.insert(tk.END, msg)
+    
+logger.add(write_log)
 
 
 
