@@ -187,7 +187,19 @@ class InitiativeWindow(tk.Toplevel):
         ship_btn = ttk.Button(self.upper_frame, text = "Ship", command = shipFcn)
         ship_btn.place(x = 410, y = 40)
 
-        drop_btn = ttk.Button(self.upper_frame, text = "Drop")
+        def dropFcn():
+            selection = self.initiative_list.curselection()[0]
+            logger.debug("Removing " + str(selection))
+            self.initiative_list.delete(selection)
+            self.render_list.pop(selection)
+            self.initiative_group_list[selection].destroy()
+            self.initiative_group_list.pop(selection)
+            for i in range(len(self.initiative_group_list)):
+                self.initiative_group_list[i].setDestinationAndMove(coords = (i * 300, 0))
+
+
+
+        drop_btn = ttk.Button(self.upper_frame, text = "Drop", command = dropFcn)
         drop_btn.place(x = 410, y = 170)
         
 
