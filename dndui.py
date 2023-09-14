@@ -57,7 +57,8 @@ class InitiativeWindow(tk.Toplevel):
         self.initiative_list.place(x = 0, y = 0, height = 300, width = 400)
         
         self.avatar_size = (200,200)
-        self.upper_buffer = 10
+        self.cameo_size = (250,275)
+        self.upper_buffer = 15
         self.left_buffer = 10
         
         self.pull_initiative_btn = ttk.Button(self.upper_frame, text = "Pull Order", command = self.parseDNDB)
@@ -76,6 +77,11 @@ class InitiativeWindow(tk.Toplevel):
         
         self.move_down_btn = ttk.Button(self.upper_frame, text = "Move Down")
         self.move_down_btn.place(x = 410, y = 250)
+        
+        self.cycle_fwd_btn = ttk.Button(self.upper_frame, text = "Cycle Forward", command = self.cycleForward)
+        self.cycle_fwd_btn.place(x = 800, y = 100, width = 200, height = 200)
+        self.cycle_bwd_btn = ttk.Button(self.upper_frame, text = "Cycle Backward", command = self.cycleBackward)
+        self.cycle_bwd_btn.place(x = 1020, y = 100, width = 200, height = 200)
         
         
         self.prep_name_str_var = tk.StringVar(value = "Name")
@@ -107,10 +113,11 @@ class InitiativeWindow(tk.Toplevel):
             self.initiative_group_list[i].setDestinationAndMove(coords = (i * 250, 0))
 
     class InitiativeGroup():
-        def __init__(self, name = "Nobody", avatar = None, canvas = None, location = [0,0], avatar_size = (250,250), upper_buffer = 10, left_buffer = 10):
+        def __init__(self, name = "Nobody", avatar = None, canvas = None, location = [0,0], avatar_size = (250,250), upper_buffer = 10, left_buffer = 10, cameo_size = (250,275)):
             self.name = name
             self.avatar = avatar
             self.avatar_size = avatar_size
+            self.cameo_size = cameo_size
             self.upper_buffer = upper_buffer
             self.left_buffer = left_buffer
             self.location = location
@@ -120,7 +127,10 @@ class InitiativeWindow(tk.Toplevel):
             self.avatar_image_id = self.canvas.create_image(self.left_buffer + self.location[0], self.upper_buffer + self.location[1], image = self.avatar_image_be, anchor = "nw")
             
             self.font = tkFont.Font(family='Arial', size=12, weight='bold')
-            self.name_id = self.canvas.create_text(self.left_buffer + self.location[0] + self.avatar_size[0]/2,self.upper_buffer + self.location[1] + self.avatar_size[1] + 10, text = self.name, width = 200, font = self.font, justify = tk.CENTER, fill = "white")
+            self.cameo_be = ImageTk.PhotoImage(Image.open("./assets/init_cameo.png").resize(self.cameo_size))
+            self.cameo_id = self.canvas.create_image(self.left_buffer + self.location[0] - 25, self.upper_buffer + self.location[1]-5, image = self.cameo_be, anchor = "nw")
+
+            self.name_id = self.canvas.create_text(self.left_buffer + self.location[0] + self.avatar_size[0]/2,self.upper_buffer + self.location[1] + self.avatar_size[1] + 40, text = self.name, width = 200, font = self.font, justify = tk.CENTER, fill = "white")
 
             self.anim = 0
             
@@ -131,6 +141,7 @@ class InitiativeWindow(tk.Toplevel):
             logger.debug("Destroying " + self.name)
             self.canvas.delete(self.avatar_image_id)
             self.canvas.delete(self.name_id)
+            self.canvas.delete(self.cameo_id)
             
             
         def setDestination(self, coords):
@@ -150,15 +161,15 @@ class InitiativeWindow(tk.Toplevel):
                 self.upper_buffer + self.location[1])
             self.canvas.coords(self.name_id, 
                 self.left_buffer + self.location[0] + self.avatar_size[0]/2, 
-                self.upper_buffer + self.location[1] + self.avatar_size[1] + 10)
+                self.upper_buffer + self.location[1] + self.avatar_size[1] + 40)
+            self.canvas.coords(self.cameo_id,
+                self.left_buffer + self.location[0] - 25,
+                self.upper_buffer + self.location[1] - 5)
 
             
         def snapToDestination(self):
             self.location = self.destination
-            self.canvas.coords(self.avatar_image_id, self.left_buffer + self.location[0], self.upper_buffer + self.location[1])
-            self.canvas.coords(self.name_id, 
-                self.left_buffer + self.location[0] + self.avatar_size[0]/2, 
-                self.upper_buffer + self.location[1] + self.avatar_size[1] + 10)
+            self.redraw()
             if self.anim != 0:
                 root.after_cancel(self.anim)
                 self.anim = 0
@@ -192,7 +203,22 @@ class InitiativeWindow(tk.Toplevel):
                 
                 self.anim = root.after(per_step, lambda: self.updateLocationStep(x_path[1:], per_step))
 
-    
+    def cycleForward(self):
+        self.initiative_group_list[0].setDestination((2000,0))
+        self.initiative_group_list[0].snapToDestination()
+        self.initiative_group_list.append(self.initiative_group_list.pop(0))
+        self.initiative_list.insert(tk.END, self.initiative_list.get(0))
+        self.initiative_list.delete(0)
+        self.setInitGroupsSpacing()
+        
+    def cycleBackward(self):
+        self.initiative_group_list[-1].setDestination((-300, 0))
+        self.initiative_group_list[-1].snapToDestination()
+        self.initiative_group_list.insert(0, self.initiative_group_list.pop())
+        self.initiative_list.insert(0, self.initiative_list.get(tk.END))
+        self.initiative_list.delete(tk.END)
+        self.setInitGroupsSpacing()
+
     def parseDNDB(self):
         logger.debug("Parsing dndb content")
         avatar_imgs = []
@@ -229,7 +255,7 @@ class InitiativeWindow(tk.Toplevel):
         self.initiative_group_list = []
         for elem in self.render_list:
             logger.debug(elem[1])
-            self.initiative_group_list.append(self.InitiativeGroup(name = elem[1], avatar = elem[0], canvas = self.display_canvas, location = [0,0], avatar_size = self.avatar_size))
+            self.initiative_group_list.append(self.InitiativeGroup(name = elem[1], avatar = elem[0], canvas = self.display_canvas, location = [0,0], avatar_size = self.avatar_size, cameo_size = self.cameo_size, upper_buffer = self.upper_buffer, left_buffer = self.left_buffer))
         self.setInitGroupsSpacing()
             
     
@@ -265,7 +291,7 @@ class InitiativeWindow(tk.Toplevel):
         to_name = self.prep_name_str_var.get()
             # pull img
         to_avatar = self.prep_img
-        new_init_group = self.InitiativeGroup(name = to_name, avatar = to_avatar, canvas = self.display_canvas, location = [2000,0], avatar_size = self.avatar_size)    
+        new_init_group = self.InitiativeGroup(name = to_name, avatar = to_avatar, canvas = self.display_canvas, location = [2000,0], avatar_size = self.avatar_size, cameo_size = self.cameo_size, upper_buffer = self.upper_buffer, left_buffer = self.left_buffer)    
         # add to list box
         self.initiative_list.insert(selection, to_name)
         # add to initiative group list
