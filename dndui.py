@@ -56,30 +56,75 @@ class InitiativeWindow(tk.Toplevel):
         self.initiative_list = tk.Listbox(self.upper_frame)
         self.initiative_list.place(x = 0, y = 0, height = 300, width = 400)
         
-        avatar_size = (200,200)
-        upper_buffer = 10
-        left_buffer = 10
+        self.avatar_size = (200,200)
+        self.upper_buffer = 10
+        self.left_buffer = 10
         
+        self.pull_initiative_btn = ttk.Button(self.upper_frame, text = "Pull Order", command = self.parseDNDB)
+        self.pull_initiative_btn.place(x = 410, y = 0)
+
+        self.ship_btn = ttk.Button(self.upper_frame, text = "Ship", command = self.shipFcn)
+        self.ship_btn.place(x = 410, y = 40)
+
+        self.drop_btn = ttk.Button(self.upper_frame, text = "Drop", command = self.dropFcn)
+        self.drop_btn.place(x = 410, y = 170)
     
+
+    
+        self.move_up_btn = ttk.Button(self.upper_frame, text = "Move Up")
+        self.move_up_btn.place(x = 410, y = 210)
         
+        self.move_down_btn = ttk.Button(self.upper_frame, text = "Move Down")
+        self.move_down_btn.place(x = 410, y = 250)
+        
+        
+        self.prep_name_str_var = tk.StringVar(value = "Name")
+        self.prep_name = ttk.Entry(self.upper_frame, textvariable = self.prep_name_str_var)
+        
+        self.prep_name.place(x = 1500, y = 0, width = 250)
+        
+        self.pull_pic_btn = ttk.Button(self.upper_frame, text = "Pull Pic", command = self.pullPicFcn)
+        self.pull_pic_btn.place(x = 1500, y = 30, anchor = "ne", width = 100)
+        
+        self.add_above_btn = ttk.Button(self.upper_frame, text = "Add Above", command = self.addAboveFcn)
+        self.add_above_btn.place(x = 1500, y = 70, anchor = "ne", width = 100)
+        self.add_below_btn = ttk.Button(self.upper_frame, text = "Add Below")
+        self.add_below_btn.place(x = 1500, y = 110, anchor = "ne", width = 100)
+        self.prep_canvas = tk.Canvas(self.upper_frame, bg = "#000000", width = self.avatar_size[0], height = self.avatar_size[1])
+        self.prep_canvas.place(x = 1500, y = 30, width = self.avatar_size[0], height = self.avatar_size[1])
+        
+        
+        
+        
+        self.display_canvas = tk.Canvas(self.lower_frame, bg = "#00FF00", width = 1800, height = 300)
+        self.display_canvas.grid(row = 4, column = 0, columnspan = 5)
+        
+        self.upper_frame.place(x = 0, y = 0, height = 300, width = 1800)
+        self.lower_frame.place(x = 0, y = 300, height = 300, width = 1800)
+
+    def setInitGroupsSpacing(self):
+        for i in range(len(self.initiative_group_list)):
+            self.initiative_group_list[i].setDestinationAndMove(coords = (i * 250, 0))
+
     class InitiativeGroup():
-        def __init__(self, name = "Nobody", avatar = None, canvas = None, location = [0,0]):
+        def __init__(self, name = "Nobody", avatar = None, canvas = None, location = [0,0], avatar_size = (250,250), upper_buffer = 10, left_buffer = 10):
             self.name = name
             self.avatar = avatar
+            self.avatar_size = avatar_size
+            self.upper_buffer = upper_buffer
+            self.left_buffer = left_buffer
             self.location = location
             self.destination = self.location
             self.canvas = canvas
-            self.avatar_image_be = ImageTk.PhotoImage(self.avatar.resize(avatar_size))
-            self.avatar_image_id = self.canvas.create_image(left_buffer + self.location[0], upper_buffer + self.location[1], image = self.avatar_image_be, anchor = "nw")
+            self.avatar_image_be = ImageTk.PhotoImage(self.avatar.resize(self.avatar_size))
+            self.avatar_image_id = self.canvas.create_image(self.left_buffer + self.location[0], self.upper_buffer + self.location[1], image = self.avatar_image_be, anchor = "nw")
             
             self.font = tkFont.Font(family='Arial', size=12, weight='bold')
-            self.name_id = self.canvas.create_text(left_buffer + self.location[0] + avatar_size[0]/2,upper_buffer + self.location[1] + avatar_size[1] + 10, text = self.name, width = 200, font = self.font, justify = tk.CENTER, fill = "white")
+            self.name_id = self.canvas.create_text(self.left_buffer + self.location[0] + self.avatar_size[0]/2,self.upper_buffer + self.location[1] + self.avatar_size[1] + 10, text = self.name, width = 200, font = self.font, justify = tk.CENTER, fill = "white")
 
             self.anim = 0
             
-        def setInitGroupsSpacing():
-            for i in range(len(self.initiative_group_list)):
-                self.initiative_group_list[i].setDestinationAndMove(coords = (i * 300, 0))
+        
 
         
         def destroy(self):
@@ -101,19 +146,19 @@ class InitiativeWindow(tk.Toplevel):
             
         def redraw(self):
             self.canvas.coords(self.avatar_image_id, 
-                left_buffer + self.location[0], 
-                upper_buffer + self.location[1])
+                self.left_buffer + self.location[0], 
+                self.upper_buffer + self.location[1])
             self.canvas.coords(self.name_id, 
-                left_buffer + self.location[0] + avatar_size[0]/2, 
-                upper_buffer + self.location[1] + avatar_size[1] + 10)
+                self.left_buffer + self.location[0] + self.avatar_size[0]/2, 
+                self.upper_buffer + self.location[1] + self.avatar_size[1] + 10)
 
             
         def snapToDestination(self):
             self.location = self.destination
-            self.canvas.coords(self.avatar_image_id, left_buffer + self.location[0], upper_buffer + self.location[1])
+            self.canvas.coords(self.avatar_image_id, self.left_buffer + self.location[0], self.upper_buffer + self.location[1])
             self.canvas.coords(self.name_id, 
-                left_buffer + self.location[0] + avatar_size[0]/2, 
-                upper_buffer + self.location[1] + avatar_size[1] + 10)
+                self.left_buffer + self.location[0] + self.avatar_size[0]/2, 
+                self.upper_buffer + self.location[1] + self.avatar_size[1] + 10)
             if self.anim != 0:
                 root.after_cancel(self.anim)
                 self.anim = 0
@@ -148,7 +193,7 @@ class InitiativeWindow(tk.Toplevel):
                 self.anim = root.after(per_step, lambda: self.updateLocationStep(x_path[1:], per_step))
 
     
-    def parseDNDB():
+    def parseDNDB(self):
         logger.debug("Parsing dndb content")
         avatar_imgs = []
         render_list = []
@@ -177,23 +222,19 @@ class InitiativeWindow(tk.Toplevel):
             self.initiative_list.insert(tk.END, elem[1])
         logger.debug("Set new initiative list contents.")
         
-    pull_initiative_btn = ttk.Button(self.upper_frame, text = "Pull Order", command = parseDNDB)
-    pull_initiative_btn.place(x = 410, y = 0)
     
-    def shipFcn():
+    def shipFcn(self):
         for elem in self.initiative_group_list:
             elem.destroy()
         self.initiative_group_list = []
         for elem in self.render_list:
             logger.debug(elem[1])
-            self.initiative_group_list.append(InitiativeGroup(name = elem[1], avatar = elem[0], canvas = self.display_canvas, location = [0,0]))
+            self.initiative_group_list.append(self.InitiativeGroup(name = elem[1], avatar = elem[0], canvas = self.display_canvas, location = [0,0], avatar_size = self.avatar_size))
         self.setInitGroupsSpacing()
             
     
-    ship_btn = ttk.Button(self.upper_frame, text = "Ship", command = shipFcn)
-    ship_btn.place(x = 410, y = 40)
 
-    def dropFcn():
+    def dropFcn(self):
         selection = self.initiative_list.curselection()[0]
         logger.debug("Removing " + str(selection))
         self.initiative_list.delete(selection)
@@ -204,35 +245,17 @@ class InitiativeWindow(tk.Toplevel):
 
 
 
-    drop_btn = ttk.Button(self.upper_frame, text = "Drop", command = dropFcn)
-    drop_btn.place(x = 410, y = 170)
     
-
-    
-    move_up_btn = ttk.Button(self.upper_frame, text = "Move Up")
-    move_up_btn.place(x = 410, y = 210)
-    
-    move_down_btn = ttk.Button(self.upper_frame, text = "Move Down")
-    move_down_btn.place(x = 410, y = 250)
-    
-    
-    self.prep_name_str_var = tk.StringVar(value = "Name")
-    self.prep_name = ttk.Entry(self.upper_frame, textvariable = self.prep_name_str_var)
-    
-    self.prep_name.place(x = 1500, y = 0, width = 250)
-    
-    def pullPicFcn():
+    def pullPicFcn(self):
         self.prep_img = ImageGrab.grabclipboard()
         logger.debug("Pulled from clipboard")
         if self.prep_img:
-            self.prep_img_be = ImageTk.PhotoImage(self.prep_img.resize(avatar_size))
+            self.prep_img_be = ImageTk.PhotoImage(self.prep_img.resize(self.avatar_size))
             self.prep_img_cv = self.prep_canvas.create_image(0,0, image = self.prep_img_be, anchor = "nw")
 
     
-    self.pull_pic_btn = ttk.Button(self.upper_frame, text = "Pull Pic", command = pullPicFcn)
-    self.pull_pic_btn.place(x = 1500, y = 30, anchor = "ne", width = 100)
     
-    def addAboveFcn():
+    def addAboveFcn(self):
         logger.debug("Adding above")
         # pull selection ix from list box
         selection = self.initiative_list.curselection()[0]
@@ -242,7 +265,7 @@ class InitiativeWindow(tk.Toplevel):
         to_name = self.prep_name_str_var.get()
             # pull img
         to_avatar = self.prep_img
-        new_init_group = InitiativeGroup(name = to_name, avatar = to_avatar, canvas = self.display_canvas, location = [2000,0])    
+        new_init_group = self.InitiativeGroup(name = to_name, avatar = to_avatar, canvas = self.display_canvas, location = [2000,0], avatar_size = self.avatar_size)    
         # add to list box
         self.initiative_list.insert(selection, to_name)
         # add to initiative group list
@@ -252,21 +275,6 @@ class InitiativeWindow(tk.Toplevel):
 
         
     
-    self.add_above_btn = ttk.Button(self.upper_frame, text = "Add Above", command = addAboveFcn)
-    self.add_above_btn.place(x = 1500, y = 70, anchor = "ne", width = 100)
-    self.add_below_btn = ttk.Button(self.upper_frame, text = "Add Below")
-    self.add_below_btn.place(x = 1500, y = 110, anchor = "ne", width = 100)
-    self.prep_canvas = tk.Canvas(self.upper_frame, bg = "#000000", width = avatar_size[0], height = avatar_size[1])
-    self.prep_canvas.place(x = 1500, y = 30, width = avatar_size[0], height = avatar_size[1])
-    
-    
-    
-    
-    self.display_canvas = tk.Canvas(self.lower_frame, bg = "#00FF00", width = 1800, height = 300)
-    self.display_canvas.grid(row = 4, column = 0, columnspan = 5)
-    
-    self.upper_frame.place(x = 0, y = 0, height = 300, width = 1800)
-    self.lower_frame.place(x = 0, y = 300, height = 300, width = 1800)
 
 
 
