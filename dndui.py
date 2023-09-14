@@ -12,6 +12,7 @@ import os
 import ctypes
 import json
 import requests
+import gc
 from io import BytesIO
 
 
@@ -174,7 +175,7 @@ class InitiativeWindow(tk.Toplevel):
                 root.after_cancel(self.anim)
                 self.anim = 0
 
-        def updateLocation(self, steps=100, duration = 200):
+        def updateLocation(self, steps=200, duration = 200):
             if self.anim != 0:
                 root.after_cancel(self.anim)
                 self.anim = 0
@@ -262,11 +263,12 @@ class InitiativeWindow(tk.Toplevel):
 
     def dropFcn(self):
         selection = self.initiative_list.curselection()[0]
-        logger.debug("Removing " + str(selection))
+        logger.debug("Removing " + str(selection) + ": " + self.initiative_group_list[selection].name)
         self.initiative_list.delete(selection)
-        self.render_list.pop(selection)
-        self.initiative_group_list[selection].destroy()
-        self.initiative_group_list.pop(selection)
+        self.initiative_group_list.pop(selection).destroy()
+        #to_del.setDestinationAndMove((to_del.getCurrentPosition()[0], 600))
+        #root.after(500, to_del.destroy())
+        #root.after(500, lambda: gc.collect())
         self.setInitGroupsSpacing()
 
 
