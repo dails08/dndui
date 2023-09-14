@@ -49,7 +49,7 @@ class InitiativeWindow(tk.Toplevel):
         
         self.render_list = []
         self.initiative_group_list = []
-        
+
         self.upper_frame = ttk.Frame(self)
         self.lower_frame = ttk.Frame(self)
         
@@ -73,10 +73,10 @@ class InitiativeWindow(tk.Toplevel):
     
 
     
-        self.move_up_btn = ttk.Button(self.upper_frame, text = "Move Up")
+        self.move_up_btn = ttk.Button(self.upper_frame, text = "Move Up", command = self.moveUpFcn)
         self.move_up_btn.place(x = 410, y = 210)
         
-        self.move_down_btn = ttk.Button(self.upper_frame, text = "Move Down")
+        self.move_down_btn = ttk.Button(self.upper_frame, text = "Move Down", command = self.moveDownFcn)
         self.move_down_btn.place(x = 410, y = 250)
         
         self.cycle_fwd_btn = ttk.Button(self.upper_frame, text = "Cycle Forward", command = self.cycleForward)
@@ -95,7 +95,7 @@ class InitiativeWindow(tk.Toplevel):
         
         self.add_above_btn = ttk.Button(self.upper_frame, text = "Add Above", command = self.addAboveFcn)
         self.add_above_btn.place(x = 1500, y = 70, anchor = "ne", width = 100)
-        self.add_below_btn = ttk.Button(self.upper_frame, text = "Add Below")
+        self.add_below_btn = ttk.Button(self.upper_frame, text = "Add Below", command = self.addBelowFcn)
         self.add_below_btn.place(x = 1500, y = 110, anchor = "ne", width = 100)
         self.prep_canvas = tk.Canvas(self.upper_frame, bg = "#000000", width = self.avatar_size[0], height = self.avatar_size[1])
         self.prep_canvas.place(x = 1500, y = 30, width = self.avatar_size[0], height = self.avatar_size[1])
@@ -127,7 +127,7 @@ class InitiativeWindow(tk.Toplevel):
             self.avatar_image_be = ImageTk.PhotoImage(self.avatar.resize(self.avatar_size))
             self.avatar_image_id = self.canvas.create_image(self.left_buffer + self.location[0], self.upper_buffer + self.location[1], image = self.avatar_image_be, anchor = "nw")
             
-            self.font = tkFont.Font(family='Arial', size=12, weight='bold')
+            self.font = tkFont.Font(family='Matura MT Script Capitals', size=12, weight='bold')
             self.cameo_be = ImageTk.PhotoImage(Image.open("./assets/init_cameo.png").resize(self.cameo_size))
             self.cameo_id = self.canvas.create_image(self.left_buffer + self.location[0] - 25, self.upper_buffer + self.location[1]-5, image = self.cameo_be, anchor = "nw")
 
@@ -300,6 +300,66 @@ class InitiativeWindow(tk.Toplevel):
         self.initiative_group_list.insert(selection, new_init_group)
         # update location and redraw
         self.setInitGroupsSpacing()
+        
+    def addBelowFcn(self):
+        logger.debug("Adding below")
+        selection = self.initiative_list.curselection()[0]
+        
+        to_name = self.prep_name_str_var.get()
+        to_avatar = self.prep_img
+        new_init_group = self.InitiativeGroup(name = to_name, avatar = to_avatar, canvas = self.display_canvas, location = [2000,0], avatar_size = self.avatar_size, cameo_size = self.cameo_size, upper_buffer = self.upper_buffer, left_buffer = self.left_buffer)    
+        self.initiative_list.insert(selection + 1, to_name)
+        # add to initiative group list
+        self.initiative_group_list.insert(selection + 1, new_init_group)
+        # update location and redraw
+        self.setInitGroupsSpacing()
+        
+    def moveUpFcn(self):
+        logger.debug("Moving up")
+        selection = self.initiative_list.curselection()[0]
+        logger.debug("Selection is " + str(selection))
+        if selection > 0:
+            to_name = self.initiative_list.get(selection)
+            
+            logger.debug("Copying " + to_name + " down")
+            self.initiative_list.insert(selection - 1, to_name)
+            
+            logger.debug("Deleting " + self.initiative_list.get(selection + 1))
+            self.initiative_list.delete(selection +1)
+            
+            
+            logger.debug("Swapping " + self.initiative_group_list[selection - 1].name + " and " + self.initiative_group_list[selection].name)
+            self.initiative_group_list[selection - 1], self.initiative_group_list[selection] = self.initiative_group_list[selection], self.initiative_group_list[selection - 1]
+            
+            logger.debug("Setting selection to " + self.initiative_list.get(selection - 1))
+            self.initiative_list.selection_set(selection - 1)
+            
+            self.setInitGroupsSpacing()
+            
+    def moveDownFcn(self):
+        logger.debug("Moving down")
+        selection = self.initiative_list.curselection()[0]
+        logger.debug("Selection is " + str(selection))
+        if selection < self.initiative_list.size()-1:
+            # easiest way to do this is just to moveUp the selection below.
+            to_name = self.initiative_list.get(selection + 1)
+            
+            logger.debug("Copying " + to_name + " up")
+            self.initiative_list.insert(selection, to_name)
+            
+            logger.debug("Deleting " + self.initiative_list.get(selection + 2))
+            self.initiative_list.delete(selection + 2)
+            
+            logger.debug("Swapping " + self.initiative_group_list[selection + 1].name + " and " + self.initiative_group_list[selection].name)
+            
+            self.initiative_group_list[selection + 1], self.initiative_group_list[selection] = self.initiative_group_list[selection], self.initiative_group_list[selection + 1]
+
+            logger.debug("Setting selection to " + self.initiative_list.get(selection + 1))
+            self.initiative_list.selection_set(selection + 1)
+
+            self.setInitGroupsSpacing()
+
+
 
         
     
