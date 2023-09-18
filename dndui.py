@@ -368,22 +368,50 @@ class InitiativeWindow(tk.Toplevel):
     
 class BackgroundWindow(tk.Toplevel):
     def __init__(self):
-        super().__init__(width = 1920, height = 1080)
+        super().__init__(width = 2320, height = 1080)
         self.resizable(0,0)
         self.title("Background Display")
         
-        self.display_frame = ttk.Frame(self)
-        self.display_frame.place(x = 0, y = 0, width = 1920, height = 1080)
+        style = ttk.Style()
+        style.configure("playerframe.TFrame", background = "black")
+        
+        self.display_frame = ttk.Frame(self, style = "playerframe.TFrame")
+        self.display_frame.place(x = 400, y = 0, width = 1920, height = 1080)
+        self.display_frame.config()
         
         self.h = self.display_frame.winfo_id()
         
         self.canvas = tk.Canvas(self.display_frame)
         self.canvas.place(x = 0, y = 0, width = 1920, height = 1080)
         
+        columns = ["Filename"]
+        self.tree_frame = ttk.Frame(self)
+        self.file_tree = ttk.Treeview(self.tree_frame, columns = columns)
+        self.tree_frame.place(x = 0, y = 0, width = 400, height = 1080)
+        self.file_tree.place(x = 0, y = 0, width = 400, height = 1080)
+        self.media_root_dir = r"C:\Users\Christopher\Dropbox\CoS\OBS Rework\bg"
+        
+        parent_dir = ""
+        for dirName, subdirList, fileList in os.walk(self.media_root_dir):
+            print("Dir: " + dirName)
+            parent_dir = self.file_tree.insert(parent_dir, "end", dirName, values = [dirName])
+            for subdir in subdirList:
+                while self.file_tree.exists(subdir):
+                    subdir += "a"
+                self.file_tree.insert(dirName, "end", iid = subdir, values = [subdir])
+            for file in fileList:
+                while self.file_tree.exists(file):
+                    file += "a"
+                print(file)
+                self.file_tree.insert(dirName, "end", iid = file, values = [file])
+        
+        
+        
         
         self.vlc_instance = vlc.Instance()
         
         MRL = r"C:\Users\Christopher\Dropbox\CoS\OBS Rework\bg\Barovia.mp4"
+        MRL = r"C:\Users\Christopher\Dropbox\CoS\OBS Rework\bg\AT2.jpg"
         self.player = self.vlc_instance.media_player_new()
         self.player.set_hwnd(self.h)
 
