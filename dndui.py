@@ -14,6 +14,9 @@ import json
 import requests
 import gc
 from io import BytesIO
+import pathlib
+
+import vlc
 
 
 ctypes.windll.shcore.SetProcessDpiAwareness(1)
@@ -43,7 +46,7 @@ class LogWindow(tk.Toplevel):
 
 class InitiativeWindow(tk.Toplevel):
     def __init__(self):
-        super().__init__(height = 600, width = 1800)
+        super().__init__(width = 1800, height = 600)
         self.resizable(0,0)
         self.title("Initiative Display")
         
@@ -363,6 +366,39 @@ class InitiativeWindow(tk.Toplevel):
 
         
     
+class BackgroundWindow(tk.Toplevel):
+    def __init__(self):
+        super().__init__(width = 1920, height = 1080)
+        self.resizable(0,0)
+        self.title("Background Display")
+        
+        self.display_frame = ttk.Frame(self)
+        self.display_frame.place(x = 0, y = 0, width = 1920, height = 1080)
+        
+        self.h = self.display_frame.winfo_id()
+        
+        self.canvas = tk.Canvas(self.display_frame)
+        self.canvas.place(x = 0, y = 0, width = 1920, height = 1080)
+        
+        
+        self.vlc_instance = vlc.Instance()
+        
+        MRL = r"C:\Users\Christopher\Dropbox\CoS\OBS Rework\bg\Barovia.mp4"
+        self.player = self.vlc_instance.media_player_new()
+        self.player.set_hwnd(self.h)
+
+        self.list_player = self.vlc_instance.media_list_player_new()
+        self.list_player.set_media_player(self.player)
+        self.list_player.set_playback_mode(vlc.PlaybackMode.loop)
+
+        self.media_list = self.vlc_instance.media_list_new([MRL])
+        self.list_player.set_media_list(self.media_list)
+        self.list_player.play_item_at_index(0)
+
+    def playMedia(self, MRL):
+        self.media_list = self.vlc_instance.media_list_new([MRL])
+        self.list_player.set_media_list(self.media_list)
+        self.list_player.play_item_at_index(0)
 
 
 
@@ -410,7 +446,7 @@ logger.add(write_log)
 initiative_window = InitiativeWindow()
 
 
-
+background_window = BackgroundWindow()
 
 
 
