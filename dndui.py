@@ -398,8 +398,12 @@ class BackgroundWindow(tk.Toplevel):
         self.tree_frame = ttk.Frame(self)
         self.file_tree = ttk.Treeview(self.tree_frame)
         self.tree_frame.place(x = 0, y = 0, width = 400, height = 1080)
-        self.file_tree.place(x = 0, y = 0, width = 400, height = 1080)
+        self.file_tree.place(x = 0, y = 0, width = 400, height = 800)
         self.media_root_dir = r"C:\Users\Christopher\Dropbox\CoS\OBS Rework\bg"
+        
+        self.preview_frame = ttk.Frame(self.tree_frame)
+        self.preview_frame.place(x = 10, y = 810, width = 320, height = 180)
+        
         
 
         
@@ -425,6 +429,8 @@ class BackgroundWindow(tk.Toplevel):
                 self.file_tree.insert(dirName, "end", iid = dirName + "\\" + filename, text = filename)
         
         self.file_tree.bind("<Double-1>", self.fileTreeDoubleClick)
+        self.file_tree.bind("<Return>", self.fileTreeDoubleClick)
+        self.file_tree.bind("<<TreeviewSelect>>", self.fileTreeSingleClick)
         
 
         
@@ -445,10 +451,28 @@ class BackgroundWindow(tk.Toplevel):
         self.list_player.set_media_list(self.media_list)
         self.list_player.play_item_at_index(0)
 
+        self.preview_player = self.vlc_instance.media_player_new()
+        self.preview_player.set_hwnd(self.preview_frame.winfo_id())
+        self.preview_player.audio_set_mute(True)
+        
+        self.preview_list_player = self.vlc_instance.media_list_player_new()
+        self.preview_list_player.set_media_player(self.preview_player)
+        self.preview_list_player.set_playback_mode(vlc.PlaybackMode.repeat)
+        
+        self.preview_media_list = self.vlc_instance.media_list_new([MRL])
+        self.preview_list_player.set_media_list(self.media_list)
+        self.preview_list_player.play_item_at_index(0)
+
+
     def playMedia(self, MRL):
         self.media_list = self.vlc_instance.media_list_new([MRL])
         self.list_player.set_media_list(self.media_list)
         self.list_player.play_item_at_index(0)
+        
+    def previewMedia(self, MRL):
+        self.preview_media_list = self.vlc_instance.media_list_new([MRL])
+        self.preview_list_player.set_media_list(self.preview_media_list)
+        self.preview_list_player.play_item_at_index(0)        
 
     def fileTreeDoubleClick(self, event):
         selection_iid = self.file_tree.selection()[0]
@@ -469,6 +493,25 @@ class BackgroundWindow(tk.Toplevel):
         print(filename)
         self.playMedia(selection_iid)
         citeArt(filename)
+        
+    def fileTreeSingleClick(self, event):
+        selection_iid = self.file_tree.selection()[0]
+        print("Selection iid:")
+        print(selection_iid)
+        item = self.file_tree.item(selection_iid)
+        if len(self.file_tree.get_children(selection_iid)) > 0:
+            # Don't play whole folders of media
+            return
+        print("Item:")
+        print(item)
+        selection_parent = self.file_tree.parent(selection_iid)
+        print("Selection parent:")
+        print(selection_parent)
+        filename = item['text']
+        while filename.startswith("_ex_"):
+            filename = filename[4:]
+        print(filename)
+        self.previewMedia(selection_iid)
 
 
 broker_address="127.0.0.1"
