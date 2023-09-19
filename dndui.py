@@ -41,6 +41,16 @@ class LogWindow(tk.Toplevel):
         self.log = tk.Text(self)
         self.log.place(x = 0, y = 0, height = 500, width = 1500)
         
+       
+       
+class ArtCitationWindow(tk.Toplevel):
+    def __init__(self):
+        super().__init__(height = 500, width = 1500)
+        self.title("Citation Window")
+        
+        self.citations = tk.Text(self)
+        self.citations.place(x = 0, y = 0, height = 500, width = 1500)
+               
 
 
 
@@ -403,13 +413,13 @@ class BackgroundWindow(tk.Toplevel):
             print("Adding " + dirName + " under " + parent_dir) 
             if not self.file_tree.exists(dirName):
                 self.file_tree.insert("", "end", dirName, text = dirName.split("\\")[-1])
-            for subdir in subdirList:
+            #for subdir in subdirList:
             # account for the strange case where
             # a folder with the same name exists elsewhere
-                while self.file_tree.exists(subdir):
-                    subdir = "_ex_" + subdir
-                print("Adding " + subdir + " under " + dirName)
-                self.file_tree.insert(dirName, "end", iid = subdir, text = subdir.split("\\")[-1])
+            #    while self.file_tree.exists(subdir):
+            #        subdir = "_ex_" + subdir
+            #    print("Adding " + subdir + " under " + dirName)
+            #    self.file_tree.insert(dirName, "end", iid = subdir, text = subdir.split("\\")[-1])
             for filename in fileList:
                 print("Adding " + dirName + "\\" + filename + " under " + dirName)
                 self.file_tree.insert(dirName, "end", iid = dirName + "\\" + filename, text = filename)
@@ -425,6 +435,7 @@ class BackgroundWindow(tk.Toplevel):
         MRL = r"C:\Users\Christopher\Dropbox\CoS\OBS Rework\bg\AT2.jpg"
         self.player = self.vlc_instance.media_player_new()
         self.player.set_hwnd(self.h)
+        self.player.audio_set_mute(True)
 
         self.list_player = self.vlc_instance.media_list_player_new()
         self.list_player.set_media_player(self.player)
@@ -457,6 +468,7 @@ class BackgroundWindow(tk.Toplevel):
             filename = filename[4:]
         print(filename)
         self.playMedia(selection_iid)
+        citeArt(filename)
 
 
 broker_address="127.0.0.1"
@@ -496,7 +508,17 @@ def write_log(msg):
 logger.add(write_log)
 
 
+art_window = ArtCitationWindow()
+citation_dict = json.load(open("citation_dict.json"))
 
+def citeArt(filename):
+    global art_window
+    global citation_dict
+    print("To cite:")
+    print(filename)
+    if filename in citation_dict.keys():
+        citation = filename.split(".")[0] + ": " + citation_dict[filename] + "\n"
+        art_window.citations.insert(tk.END, citation)
 
 
 
