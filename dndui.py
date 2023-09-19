@@ -386,26 +386,37 @@ class BackgroundWindow(tk.Toplevel):
         
         columns = ["Filename"]
         self.tree_frame = ttk.Frame(self)
-        self.file_tree = ttk.Treeview(self.tree_frame, columns = columns)
+        self.file_tree = ttk.Treeview(self.tree_frame)
         self.tree_frame.place(x = 0, y = 0, width = 400, height = 1080)
         self.file_tree.place(x = 0, y = 0, width = 400, height = 1080)
         self.media_root_dir = r"C:\Users\Christopher\Dropbox\CoS\OBS Rework\bg"
         
+
+        
         parent_dir = ""
+        
+       # def descendTree(dir):
+       #     for dirName, subdirList, fileList in os.walk(
+            
         for dirName, subdirList, fileList in os.walk(self.media_root_dir):
             print("Dir: " + dirName)
-            parent_dir = self.file_tree.insert(parent_dir, "end", dirName, values = [dirName])
+            print("Adding " + dirName + " under " + parent_dir) 
+            if not self.file_tree.exists(dirName):
+                self.file_tree.insert("", "end", dirName, text = dirName.split("\\")[-1])
             for subdir in subdirList:
+            # account for the strange case where
+            # a folder with the same name exists elsewhere
                 while self.file_tree.exists(subdir):
-                    subdir += "a"
-                self.file_tree.insert(dirName, "end", iid = subdir, values = [subdir])
-            for file in fileList:
-                while self.file_tree.exists(file):
-                    file += "a"
-                print(file)
-                self.file_tree.insert(dirName, "end", iid = file, values = [file])
+                    subdir = "_ex_" + subdir
+                print("Adding " + subdir + " under " + dirName)
+                self.file_tree.insert(dirName, "end", iid = subdir, text = subdir.split("\\")[-1])
+            for filename in fileList:
+                print("Adding " + dirName + "\\" + filename + " under " + dirName)
+                self.file_tree.insert(dirName, "end", iid = dirName + "\\" + filename, text = filename)
         
+        self.file_tree.bind("<Double-1>", self.fileTreeDoubleClick)
         
+
         
         
         self.vlc_instance = vlc.Instance()
@@ -417,7 +428,7 @@ class BackgroundWindow(tk.Toplevel):
 
         self.list_player = self.vlc_instance.media_list_player_new()
         self.list_player.set_media_player(self.player)
-        self.list_player.set_playback_mode(vlc.PlaybackMode.loop)
+        self.list_player.set_playback_mode(vlc.PlaybackMode.repeat)
 
         self.media_list = self.vlc_instance.media_list_new([MRL])
         self.list_player.set_media_list(self.media_list)
@@ -428,6 +439,24 @@ class BackgroundWindow(tk.Toplevel):
         self.list_player.set_media_list(self.media_list)
         self.list_player.play_item_at_index(0)
 
+    def fileTreeDoubleClick(self, event):
+        selection_iid = self.file_tree.selection()[0]
+        print("Selection iid:")
+        print(selection_iid)
+        item = self.file_tree.item(selection_iid)
+        if len(self.file_tree.get_children(selection_iid)) > 0:
+            # Don't play whole folders of media
+            return
+        print("Item:")
+        print(item)
+        selection_parent = self.file_tree.parent(selection_iid)
+        print("Selection parent:")
+        print(selection_parent)
+        filename = item['text']
+        while filename.startswith("_ex_"):
+            filename = filename[4:]
+        print(filename)
+        self.playMedia(selection_iid)
 
 
 broker_address="127.0.0.1"
