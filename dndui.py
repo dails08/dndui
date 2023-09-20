@@ -25,6 +25,8 @@ def on_message(client, userdata, message):
     msg = str(message.payload.decode("utf-8"))
     print(msg)
     print("message received " , msg)
+    if msg.split("/")[0] == "CitationWindow":
+        art_window.parse_msg(msg.split("/")[1:])
 
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code " + str(rc))
@@ -51,6 +53,10 @@ class ArtCitationWindow(tk.Toplevel):
         self.citations = tk.Text(self)
         self.citations.place(x = 0, y = 0, height = 500, width = 1500)
                
+    def parse_msg(self, msg):
+        logger.debug(msg)
+        if msg[0] == "Audio":
+            citeArt("Audio", msg[1])
 
 
 
@@ -385,24 +391,25 @@ class BackgroundWindow(tk.Toplevel):
         style = ttk.Style()
         style.configure("playerframe.TFrame", background = "black")
         
-        self.display_frame = ttk.Frame(self, style = "playerframe.TFrame")
+        self.display_frame = ttk.Frame(self)#, style = "playerframe.TFrame")
         self.display_frame.place(x = 400, y = 0, width = 1920, height = 1080)
         self.display_frame.config()
         
         self.h = self.display_frame.winfo_id()
         
-        self.canvas = tk.Canvas(self.display_frame)
-        self.canvas.place(x = 0, y = 0, width = 1920, height = 1080)
+        #self.canvas = tk.Canvas(self.display_frame)
+        #self.canvas.place(x = 0, y = 0, width = 1920, height = 1080)
         
         columns = ["Filename"]
         self.tree_frame = ttk.Frame(self)
         self.file_tree = ttk.Treeview(self.tree_frame)
         self.tree_frame.place(x = 0, y = 0, width = 400, height = 1080)
         self.file_tree.place(x = 0, y = 0, width = 400, height = 800)
-        self.media_root_dir = r"C:\Users\Christopher\Dropbox\CoS\OBS Rework\bg"
+        self.media_root_dir = r"C:\Users\Christopher\Dropbox\CoS\COS2\working assets\visual assets\bg"
         
+        preview_scale = .6
         self.preview_frame = ttk.Frame(self.tree_frame)
-        self.preview_frame.place(x = 10, y = 810, width = 320, height = 180)
+        self.preview_frame.place(x = 10, y = 810, width = int(640*preview_scale), height = int(360*preview_scale))
         
         
 
@@ -414,19 +421,19 @@ class BackgroundWindow(tk.Toplevel):
             
         for dirName, subdirList, fileList in os.walk(self.media_root_dir):
             print("Dir: " + dirName)
-            print("Adding " + dirName + " under " + parent_dir) 
+            print("Adding Dir " + dirName + " under " + parent_dir) 
             if not self.file_tree.exists(dirName):
                 self.file_tree.insert("", "end", dirName, text = dirName.split("\\")[-1])
-            #for subdir in subdirList:
-            # account for the strange case where
-            # a folder with the same name exists elsewhere
-            #    while self.file_tree.exists(subdir):
-            #        subdir = "_ex_" + subdir
-            #    print("Adding " + subdir + " under " + dirName)
-            #    self.file_tree.insert(dirName, "end", iid = subdir, text = subdir.split("\\")[-1])
+            for subdir in subdirList:
+                fq_subdir = dirName + "\\" + subdir
+                print("Adding subdir " + fq_subdir + " under " + dirName)
+                self.file_tree.insert(dirName, "end", iid = fq_subdir, text = subdir)
             for filename in fileList:
-                print("Adding " + dirName + "\\" + filename + " under " + dirName)
-                self.file_tree.insert(dirName, "end", iid = dirName + "\\" + filename, text = filename)
+                if filename.split(".")[-1] in ["webp"]:
+                    continue
+                fq_filename = dirName + "\\" + filename
+                print("Adding file " + fq_filename + " under " + dirName)
+                self.file_tree.insert(dirName, "end", iid = fq_filename, text = filename)
         
         self.file_tree.bind("<Double-1>", self.fileTreeDoubleClick)
         self.file_tree.bind("<Return>", self.fileTreeDoubleClick)
@@ -436,6 +443,7 @@ class BackgroundWindow(tk.Toplevel):
         
         
         self.vlc_instance = vlc.Instance()
+        self.vlc_instance.log_unset()
         
         MRL = r"C:\Users\Christopher\Dropbox\CoS\OBS Rework\bg\Barovia.mp4"
         MRL = r"C:\Users\Christopher\Dropbox\CoS\OBS Rework\bg\AT2.jpg"
@@ -492,7 +500,11 @@ class BackgroundWindow(tk.Toplevel):
             filename = filename[4:]
         print(filename)
         self.playMedia(selection_iid)
-        citeArt(filename)
+        print(selection_iid.split(".")[-1].strip())
+        print(selection_iid.split(".")[-1].strip() in ["mp4", "webm"])
+        if selection_iid.split(".")[-1].strip() in ["mp4", "webm"]:
+            citeArt("Video", filename)
+        
         
     def fileTreeSingleClick(self, event):
         selection_iid = self.file_tree.selection()[0]
@@ -554,14 +566,22 @@ logger.add(write_log)
 art_window = ArtCitationWindow()
 citation_dict = json.load(open("citation_dict.json"))
 
-def citeArt(filename):
+citation_set = set()
+
+def citeArt(art_type, filename):
     global art_window
     global citation_dict
+    global citation_set
     print("To cite:")
     print(filename)
     if filename in citation_dict.keys():
-        citation = filename.split(".")[0] + ": " + citation_dict[filename] + "\n"
-        art_window.citations.insert(tk.END, citation)
+        creator_name = citation_dict[filename]
+    else:
+        creator_name = "Unknown"
+    if art_type + filename not in citation_set:
+        citation_set.add(art_type + filename)
+        citation = filename.split(".")[0] + ": " + creator_name + "\n"
+        art_window.citations.insert(tk.END, "(" + art_type + ") " + citation)
 
 
 
