@@ -8,3 +8,4 @@ pyperclip
 beautifulsoup4
 requests
 python-vlc
+flask
