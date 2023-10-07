@@ -393,8 +393,8 @@ if __name__ == "__main__":
             
         
     class BackgroundWindow(tk.Toplevel):
-        def __init__(self):
-            super().__init__(width = 2320, height = 1080)
+        def __init__(self, vlc_instance):
+            super().__init__(width = 1920, height = 1080)
             self.resizable(0,0)
             self.title("Background Display")
             
@@ -410,18 +410,47 @@ if __name__ == "__main__":
             #self.canvas = tk.Canvas(self.display_frame)
             #self.canvas.place(x = 0, y = 0, width = 1920, height = 1080)
             
-            columns = ["Filename"]
-            self.tree_frame = ttk.Frame(self)
-            self.file_tree = ttk.Treeview(self.tree_frame)
-            self.tree_frame.place(x = 0, y = 0, width = 400, height = 1080)
+            
+           # def descendTree(dir):
+           #     for dirName, subdirList, fileList in os.walk(
+                
+            
+            
+            self.vlc_instance = vlc_instance
+            
+            MRL = r"C:\Users\Christopher\Dropbox\CoS\OBS Rework\bg\AT2.jpg"
+            self.player = self.vlc_instance.media_player_new()
+            self.player.set_hwnd(self.h)
+            self.player.audio_set_mute(True)
+
+            self.list_player = self.vlc_instance.media_list_player_new()
+            self.list_player.set_media_player(self.player)
+            self.list_player.set_playback_mode(vlc.PlaybackMode.repeat)
+
+            self.media_list = self.vlc_instance.media_list_new([MRL])
+            self.list_player.set_media_list(self.media_list)
+            self.list_player.play_item_at_index(0)
+
+
+
+
+
+    class BackgroundTab(ttk.Frame):
+        def __init__(self, vlc_instance, background_window, controller):
+            super().__init__(controller)
+            self.vlc_instance = vlc_instance
+            self.background_window = background_window
+            
+            self.file_tree = ttk.Treeview(self)
             self.file_tree.place(x = 0, y = 0, width = 400, height = 800)
             self.media_root_dir = r"C:\Users\Christopher\Dropbox\CoS\COS2\working assets\visual assets\bg"
             
             preview_scale = .6
-            self.preview_frame = ttk.Frame(self.tree_frame)
-            self.preview_frame.place(x = 10, y = 810, width = int(640*preview_scale), height = int(360*preview_scale))
+            self.preview_frame = ttk.Frame(self)
+            self.preview_frame.place(x = 500, y = 10, width = int(640*preview_scale), height = int(360*preview_scale))
             
-            
+            MRL = r"C:\Users\Christopher\Dropbox\CoS\OBS Rework\bg\AT2.jpg"
+
 
             
             parent_dir = ""
@@ -449,26 +478,6 @@ if __name__ == "__main__":
             self.file_tree.bind("<Return>", self.fileTreeDoubleClick)
             self.file_tree.bind("<<TreeviewSelect>>", self.fileTreeSingleClick)
             
-
-            
-            
-            self.vlc_instance = vlc.Instance()
-            self.vlc_instance.log_unset()
-            
-            MRL = r"C:\Users\Christopher\Dropbox\CoS\OBS Rework\bg\Barovia.mp4"
-            MRL = r"C:\Users\Christopher\Dropbox\CoS\OBS Rework\bg\AT2.jpg"
-            self.player = self.vlc_instance.media_player_new()
-            self.player.set_hwnd(self.h)
-            self.player.audio_set_mute(True)
-
-            self.list_player = self.vlc_instance.media_list_player_new()
-            self.list_player.set_media_player(self.player)
-            self.list_player.set_playback_mode(vlc.PlaybackMode.repeat)
-
-            self.media_list = self.vlc_instance.media_list_new([MRL])
-            self.list_player.set_media_list(self.media_list)
-            self.list_player.play_item_at_index(0)
-
             self.preview_player = self.vlc_instance.media_player_new()
             self.preview_player.set_hwnd(self.preview_frame.winfo_id())
             self.preview_player.audio_set_mute(True)
@@ -481,11 +490,10 @@ if __name__ == "__main__":
             self.preview_list_player.set_media_list(self.media_list)
             self.preview_list_player.play_item_at_index(0)
 
-
         def playMedia(self, MRL):
-            self.media_list = self.vlc_instance.media_list_new([MRL])
-            self.list_player.set_media_list(self.media_list)
-            self.list_player.play_item_at_index(0)
+            self.background_window.media_list = self.vlc_instance.media_list_new([MRL])
+            self.background_window.list_player.set_media_list(self.media_list)
+            self.background_window.list_player.play_item_at_index(0)
             
         def previewMedia(self, MRL):
             self.preview_media_list = self.vlc_instance.media_list_new([MRL])
@@ -535,6 +543,8 @@ if __name__ == "__main__":
             print(filename)
             self.previewMedia(selection_iid)
 
+    vlc_instance = vlc.Instance()
+    vlc_instance.log_unset()
 
     q = mp.Queue()
     
@@ -578,18 +588,8 @@ if __name__ == "__main__":
     root.title("Tab Widget")
     root.geometry("800x600")
 
-    tabControl = ttk.Notebook(root)
 
-    tab1 = ttk.Frame(tabControl)
-    tab2 = ttk.Frame(tabControl)
 
-    tabControl.add(tab1, text = "Tab 1")
-    tabControl.add(tab2, text = "Tab 2")
-
-    tabControl.pack(expand = 1, fill = "both")
-
-    ttk.Label(tab1, text = "Tab1").grid(column = 0, row = 0, padx = 30, pady = 30)
-    ttk.Label(tab2, text = "Tab2").grid(column = 0, row = 0, padx = 30, pady = 30)
 
     logWindow = LogWindow()
 
@@ -625,8 +625,20 @@ if __name__ == "__main__":
     initiative_window = InitiativeWindow()
 
 
-    background_window = BackgroundWindow()
+    background_window = BackgroundWindow(vlc_instance)
 
+    tab_control = ttk.Notebook(root)
+
+    background_tab = BackgroundTab(vlc_instance, background_window, tab_control)
+
+
+    #tab1 = ttk.Frame(tabControl)
+    tab2 = ttk.Frame(tabControl)
+
+    tab_control.add(background_tab, text = "Background")
+    tab_control.add(tab2, text = "Tab 2")
+
+    tab_control.pack(expand = 1, fill = "both")
 
     print("Starting main loop")
     #root.protocol("WM_DELETE_WINDOW", exitHandler)
