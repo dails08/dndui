@@ -402,7 +402,7 @@ if __name__ == "__main__":
             style.configure("playerframe.TFrame", background = "black")
             
             self.display_frame = ttk.Frame(self)#, style = "playerframe.TFrame")
-            self.display_frame.place(x = 400, y = 0, width = 1920, height = 1080)
+            self.display_frame.place(x = 0, y = 0, width = 1920, height = 1080)
             self.display_frame.config()
             
             self.h = self.display_frame.winfo_id()
@@ -430,6 +430,13 @@ if __name__ == "__main__":
             self.media_list = self.vlc_instance.media_list_new([MRL])
             self.list_player.set_media_list(self.media_list)
             self.list_player.play_item_at_index(0)
+        
+        def playMedia(self, MRL):
+            logger.debug("Received " + MRL + " at bg window")
+            self.media_list = self.vlc_instance.media_list_new([MRL])
+            self.list_player.set_media_list(self.media_list)
+            self.list_player.play_item_at_index(0)
+            
 
 
 
@@ -441,13 +448,20 @@ if __name__ == "__main__":
             self.vlc_instance = vlc_instance
             self.background_window = background_window
             
-            self.file_tree = ttk.Treeview(self)
-            self.file_tree.place(x = 0, y = 0, width = 400, height = 800)
+            self.tree_frame = ttk.Frame(self)
+            self.tree_frame.place(x = 0, y = 0, width = 410, height = 500)
+            self.file_tree = ttk.Treeview(self.tree_frame)
+            self.file_tree.place(x = 0, y = 0, width = 400, height = 500)
+            
+            scrollbar = ttk.Scrollbar(self.tree_frame, orient = "vertical", command = self.file_tree.yview)
+            self.file_tree.configure(yscrollcommand = scrollbar.set)
+            
+            scrollbar.place(x = 395, y = 0, height = 500, width = 15)
             self.media_root_dir = r"C:\Users\Christopher\Dropbox\CoS\COS2\working assets\visual assets\bg"
             
             preview_scale = .6
             self.preview_frame = ttk.Frame(self)
-            self.preview_frame.place(x = 500, y = 10, width = int(640*preview_scale), height = int(360*preview_scale))
+            self.preview_frame.place(x = 410, y = 10, width = int(640*preview_scale), height = int(360*preview_scale))
             
             MRL = r"C:\Users\Christopher\Dropbox\CoS\OBS Rework\bg\AT2.jpg"
 
@@ -478,6 +492,8 @@ if __name__ == "__main__":
             self.file_tree.bind("<Return>", self.fileTreeDoubleClick)
             self.file_tree.bind("<<TreeviewSelect>>", self.fileTreeSingleClick)
             
+            self.media_list = self.vlc_instance.media_list_new([MRL])
+
             self.preview_player = self.vlc_instance.media_player_new()
             self.preview_player.set_hwnd(self.preview_frame.winfo_id())
             self.preview_player.audio_set_mute(True)
@@ -491,9 +507,8 @@ if __name__ == "__main__":
             self.preview_list_player.play_item_at_index(0)
 
         def playMedia(self, MRL):
-            self.background_window.media_list = self.vlc_instance.media_list_new([MRL])
-            self.background_window.list_player.set_media_list(self.media_list)
-            self.background_window.list_player.play_item_at_index(0)
+            logger.debug("Sending " + MRL + " to bg window")
+            self.background_window.playMedia(MRL)
             
         def previewMedia(self, MRL):
             self.preview_media_list = self.vlc_instance.media_list_new([MRL])
@@ -633,7 +648,7 @@ if __name__ == "__main__":
 
 
     #tab1 = ttk.Frame(tabControl)
-    tab2 = ttk.Frame(tabControl)
+    tab2 = ttk.Frame(tab_control)
 
     tab_control.add(background_tab, text = "Background")
     tab_control.add(tab2, text = "Tab 2")
