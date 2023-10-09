@@ -612,17 +612,19 @@ if __name__ == "__main__":
     root = tk.Tk()
     root.title("The Digital DM")
     root.geometry("800x600")
+    
+    
 
 
 
 
-    logWindow = LogWindow()
+    # logWindow = LogWindow()
 
-    def write_log(msg):
-        global logWindow
-        logWindow.log.insert(tk.END, msg)
+    # def write_log(msg):
+        # global logWindow
+        # logWindow.log.insert(tk.END, msg)
         
-    write_logger_id = logger.add(write_log)
+    # write_logger_id = logger.add(write_log)
 
 
     art_window = ArtCitationWindow()
