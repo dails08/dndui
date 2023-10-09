@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import filedialog
 import tkinter.ttk as ttk
 import tkinter.font as tkFont
 from PIL import Image, ImageTk, ImageGrab
@@ -612,9 +613,39 @@ if __name__ == "__main__":
     root = tk.Tk()
     root.title("The Digital DM")
     root.geometry("800x600")
+    root.option_add("*tearOff", False)
     
+    menubar = tk.Menu(root)
+    root["menu"] = menubar
     
-
+    menu_file = tk.Menu(menubar)
+    
+    menubar.add_cascade(menu = menu_file, label = "File")
+    
+    def setMediaLocation(background_tab):
+        media_root_dir = filedialog.askdirectory(initialdir = "~")
+        
+        for child in background_tab.file_tree.get_children():
+            background_tab.file_tree.delete(child)
+        
+        for dirName, subdirList, fileList in os.walk(media_root_dir):
+            #print("Dir: " + dirName)
+            #print("Adding Dir " + dirName + " under " + parent_dir) 
+            if not background_tab.file_tree.exists(dirName):
+                background_tab.file_tree.insert("", "end", dirName, text = dirName.split("/")[-1])
+            for subdir in subdirList:
+                fq_subdir = dirName + "\\" + subdir
+                #print("Adding subdir " + fq_subdir + " under " + dirName)
+                background_tab.file_tree.insert(dirName, "end", iid = fq_subdir, text = subdir)
+            for filename in fileList:
+                if filename.split(".")[-1] in ["webp"]:
+                    continue
+                fq_filename = dirName + "\\" + filename
+                #print("Adding file " + fq_filename + " under " + dirName)
+                background_tab.file_tree.insert(dirName, "end", iid = fq_filename, text = filename)
+            
+    menu_file.add_command(label = "Set Media Location", command = lambda: setMediaLocation(background_tab))
+   
 
 
 
@@ -666,7 +697,11 @@ if __name__ == "__main__":
     print("Starting main loop")
     #root.protocol("WM_DELETE_WINDOW", exitHandler)
     root.mainloop()
-    logger.remove(write_logger_id)
+    
+    ############################
+    ## End of program cleanup ##
+    ############################
+    # logger.remove(write_logger_id)
     logger.debug("Starting terminate procedure")
     if flask_server_p.is_alive():
         logger.debug("Found running Flask server")
