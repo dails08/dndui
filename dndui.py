@@ -109,6 +109,7 @@ if __name__ == "__main__":
             self.move_down_btn = ttk.Button(self, text = "Move Down", command = self.moveDownFcn)
             self.move_down_btn.place(x = 210, y = 250)
             
+            
             self.cycle_fwd_btn = ttk.Button(self, text = "Cycle Forward", command = self.cycleForward)
             self.cycle_fwd_btn.place(x = 5, y = 405, width = 150, height = 150)
             self.cycle_bwd_btn = ttk.Button(self, text = "Cycle Backward", command = self.cycleBackward)
@@ -118,17 +119,23 @@ if __name__ == "__main__":
             self.prep_name_str_var = tk.StringVar(value = "Name")
             self.prep_name = ttk.Entry(self, textvariable = self.prep_name_str_var)
             
-            self.prep_name.place(x = 500, y = 0, width = 200)
+            self.prep_name.place(x = 600, y = 0, width = 200)
             
             self.pull_pic_btn = ttk.Button(self, text = "Pull Pic", command = self.pullPicFcn)
-            self.pull_pic_btn.place(x = 500, y = 30, anchor = "ne", width = 100)
+            self.pull_pic_btn.place(x = 600, y = 30, anchor = "ne", width = 100)
             
             self.add_above_btn = ttk.Button(self, text = "Add Above", command = self.addAboveFcn)
-            self.add_above_btn.place(x = 500, y = 70, anchor = "ne", width = 100)
+            self.add_above_btn.place(x = 600, y = 70, anchor = "ne", width = 100)
             self.add_below_btn = ttk.Button(self, text = "Add Below", command = self.addBelowFcn)
-            self.add_below_btn.place(x = 500, y = 110, anchor = "ne", width = 100)
+            self.add_below_btn.place(x = 600, y = 110, anchor = "ne", width = 100)
             self.prep_canvas = tk.Canvas(self, bg = "#000000", width = self.avatar_size[0], height = self.avatar_size[1])
-            self.prep_canvas.place(x = 500, y = 30, width = self.avatar_size[0], height = self.avatar_size[1])
+            self.prep_canvas.place(x = 600, y = 30, width = self.avatar_size[0], height = self.avatar_size[1])
+            
+            self.copy_encounter_script_btn = ttk.Button(self, text = "Copy Encounter Script", command = self.copyEncounterScript)
+            self.copy_encounter_script_btn.place(x = 495, y = 495, width = 300, height = 50)
+            
+        def copyEncounterScript(self):
+            pyperclip.copy("navigator.clipboard.writeText(document.body.innerHTML);")
             
 
         def setInitGroupsSpacing(self):
