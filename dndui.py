@@ -69,74 +69,64 @@ if __name__ == "__main__":
                 citeArt("Audio", msg[1])
 
 
-
-    class InitiativeWindow(tk.Toplevel):
-        def __init__(self):
-            super().__init__(width = 1800, height = 600)
-            self.resizable(0,0)
-            self.title("Initiative Display")
+    class InitiativeTab(ttk.Frame):
+        def __init__(self, controller):
+            super().__init__(controller)
             
-            self.render_list = []
-            self.initiative_group_list = []
-
-            self.upper_frame = ttk.Frame(self)
-            self.lower_frame = ttk.Frame(self)
+            self.initiative_window = tk.Toplevel(width = 1800, height = 300)
+            self.initiative_window.resizable(0,0)
+            self.initiative_window.title("Initiative Dispay")
             
-            
-            self.initiative_list = tk.Listbox(self.upper_frame)
-            self.initiative_list.place(x = 0, y = 0, height = 300, width = 400)
+            self.display_canvas = tk.Canvas(self.initiative_window, bg = "#00FF00", width = 1800, height = 300)
+            self.display_canvas.place(x = 0, y = 0, width = 1800, height = 300)
             
             self.avatar_size = (200,200)
             self.cameo_size = (250,275)
             self.upper_buffer = 15
             self.left_buffer = 10
+
             
-            self.pull_initiative_btn = ttk.Button(self.upper_frame, text = "Pull Order", command = self.parseDNDB)
-            self.pull_initiative_btn.place(x = 410, y = 0)
+            self.initiative_list = tk.Listbox(self)
+            self.initiative_list.place(x = 0, y = 0, height = 400, width = 200)
+            
+            self.pull_initiative_btn = ttk.Button(self, text = "Pull Order", command = self.parseDNDB)
+            self.pull_initiative_btn.place(x = 210, y = 0)
 
-            self.ship_btn = ttk.Button(self.upper_frame, text = "Ship", command = self.shipFcn)
-            self.ship_btn.place(x = 410, y = 40)
+            self.ship_btn = ttk.Button(self, text = "Ship", command = self.shipFcn)
+            self.ship_btn.place(x = 210, y = 40)
 
-            self.drop_btn = ttk.Button(self.upper_frame, text = "Drop", command = self.dropFcn)
-            self.drop_btn.place(x = 410, y = 170)
+            self.drop_btn = ttk.Button(self, text = "Drop", command = self.dropFcn)
+            self.drop_btn.place(x = 210, y = 170)
         
 
         
-            self.move_up_btn = ttk.Button(self.upper_frame, text = "Move Up", command = self.moveUpFcn)
-            self.move_up_btn.place(x = 410, y = 210)
+            self.move_up_btn = ttk.Button(self, text = "Move Up", command = self.moveUpFcn)
+            self.move_up_btn.place(x = 210, y = 210)
             
-            self.move_down_btn = ttk.Button(self.upper_frame, text = "Move Down", command = self.moveDownFcn)
-            self.move_down_btn.place(x = 410, y = 250)
+            self.move_down_btn = ttk.Button(self, text = "Move Down", command = self.moveDownFcn)
+            self.move_down_btn.place(x = 210, y = 250)
             
-            self.cycle_fwd_btn = ttk.Button(self.upper_frame, text = "Cycle Forward", command = self.cycleForward)
-            self.cycle_fwd_btn.place(x = 800, y = 100, width = 200, height = 200)
-            self.cycle_bwd_btn = ttk.Button(self.upper_frame, text = "Cycle Backward", command = self.cycleBackward)
-            self.cycle_bwd_btn.place(x = 1020, y = 100, width = 200, height = 200)
+            self.cycle_fwd_btn = ttk.Button(self, text = "Cycle Forward", command = self.cycleForward)
+            self.cycle_fwd_btn.place(x = 800, y = 10, width = 200, height = 200)
+            self.cycle_bwd_btn = ttk.Button(self, text = "Cycle Backward", command = self.cycleBackward)
+            self.cycle_bwd_btn.place(x = 1020, y = 10, width = 200, height = 200)
             
             
             self.prep_name_str_var = tk.StringVar(value = "Name")
-            self.prep_name = ttk.Entry(self.upper_frame, textvariable = self.prep_name_str_var)
+            self.prep_name = ttk.Entry(self, textvariable = self.prep_name_str_var)
             
-            self.prep_name.place(x = 1500, y = 0, width = 250)
+            self.prep_name.place(x = 500, y = 0, width = 200)
             
-            self.pull_pic_btn = ttk.Button(self.upper_frame, text = "Pull Pic", command = self.pullPicFcn)
-            self.pull_pic_btn.place(x = 1500, y = 30, anchor = "ne", width = 100)
+            self.pull_pic_btn = ttk.Button(self, text = "Pull Pic", command = self.pullPicFcn)
+            self.pull_pic_btn.place(x = 500, y = 30, anchor = "ne", width = 100)
             
-            self.add_above_btn = ttk.Button(self.upper_frame, text = "Add Above", command = self.addAboveFcn)
-            self.add_above_btn.place(x = 1500, y = 70, anchor = "ne", width = 100)
-            self.add_below_btn = ttk.Button(self.upper_frame, text = "Add Below", command = self.addBelowFcn)
-            self.add_below_btn.place(x = 1500, y = 110, anchor = "ne", width = 100)
-            self.prep_canvas = tk.Canvas(self.upper_frame, bg = "#000000", width = self.avatar_size[0], height = self.avatar_size[1])
-            self.prep_canvas.place(x = 1500, y = 30, width = self.avatar_size[0], height = self.avatar_size[1])
+            self.add_above_btn = ttk.Button(self, text = "Add Above", command = self.addAboveFcn)
+            self.add_above_btn.place(x = 500, y = 70, anchor = "ne", width = 100)
+            self.add_below_btn = ttk.Button(self, text = "Add Below", command = self.addBelowFcn)
+            self.add_below_btn.place(x = 500, y = 110, anchor = "ne", width = 100)
+            self.prep_canvas = tk.Canvas(self, bg = "#000000", width = self.avatar_size[0], height = self.avatar_size[1])
+            self.prep_canvas.place(x = 500, y = 30, width = self.avatar_size[0], height = self.avatar_size[1])
             
-            
-            
-            
-            self.display_canvas = tk.Canvas(self.lower_frame, bg = "#00FF00", width = 1800, height = 300)
-            self.display_canvas.grid(row = 4, column = 0, columnspan = 5)
-            
-            self.upper_frame.place(x = 0, y = 0, height = 300, width = 1800)
-            self.lower_frame.place(x = 0, y = 300, height = 300, width = 1800)
 
         def setInitGroupsSpacing(self):
             for i in range(len(self.initiative_group_list)):
@@ -637,21 +627,17 @@ if __name__ == "__main__":
 
 
 
-    initiative_window = InitiativeWindow()
 
 
-    background_window = BackgroundWindow(vlc_instance)
 
     tab_control = ttk.Notebook(root)
 
+    background_window = BackgroundWindow(vlc_instance)
     background_tab = BackgroundTab(vlc_instance, background_window, tab_control)
-
-
-    #tab1 = ttk.Frame(tabControl)
-    tab2 = ttk.Frame(tab_control)
-
     tab_control.add(background_tab, text = "Background")
-    tab_control.add(tab2, text = "Tab 2")
+
+    initiative_tab = InitiativeTab(tab_control)
+    tab_control.add(initiative_tab, text = "Initiative")
 
     tab_control.pack(expand = 1, fill = "both")
 
