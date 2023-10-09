@@ -109,6 +109,8 @@ if __name__ == "__main__":
             self.move_down_btn = ttk.Button(self, text = "Move Down", command = self.moveDownFcn)
             self.move_down_btn.place(x = 210, y = 250)
             
+            self.clear_initiative_btn = ttk.Button(self, text = "Clear", command = self.clearList)
+            self.clear_initiative_btn.place(x = 210, y = 350)
             
             self.cycle_fwd_btn = ttk.Button(self, text = "Cycle Forward", command = self.cycleForward)
             self.cycle_fwd_btn.place(x = 5, y = 405, width = 150, height = 150)
@@ -136,6 +138,14 @@ if __name__ == "__main__":
             
         def copyEncounterScript(self):
             pyperclip.copy("navigator.clipboard.writeText(document.body.innerHTML);")
+            
+        def clearList(self):
+            while self.initiative_list.size() > 0:
+                self.initiative_list.delete(0)
+                self.initiative_group_list.pop(0).destroy()
+                
+
+
             
 
         def setInitGroupsSpacing(self):
