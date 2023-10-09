@@ -77,6 +77,9 @@ if __name__ == "__main__":
             self.initiative_window.resizable(0,0)
             self.initiative_window.title("Initiative Dispay")
             
+            self.render_list = []
+            self.initiative_group_list = []
+            
             self.display_canvas = tk.Canvas(self.initiative_window, bg = "#00FF00", width = 1800, height = 300)
             self.display_canvas.place(x = 0, y = 0, width = 1800, height = 300)
             
@@ -107,9 +110,9 @@ if __name__ == "__main__":
             self.move_down_btn.place(x = 210, y = 250)
             
             self.cycle_fwd_btn = ttk.Button(self, text = "Cycle Forward", command = self.cycleForward)
-            self.cycle_fwd_btn.place(x = 800, y = 10, width = 200, height = 200)
+            self.cycle_fwd_btn.place(x = 5, y = 405, width = 150, height = 150)
             self.cycle_bwd_btn = ttk.Button(self, text = "Cycle Backward", command = self.cycleBackward)
-            self.cycle_bwd_btn.place(x = 1020, y = 10, width = 200, height = 200)
+            self.cycle_bwd_btn.place(x = 155, y = 405, width = 150, height = 150)
             
             
             self.prep_name_str_var = tk.StringVar(value = "Name")
@@ -590,7 +593,7 @@ if __name__ == "__main__":
 
 
     root = tk.Tk()
-    root.title("Tab Widget")
+    root.title("The Digital DM")
     root.geometry("800x600")
 
 
