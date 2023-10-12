@@ -20,12 +20,19 @@ import multiprocessing as mp
 from threading import Timer
 from flask import Flask, request
 import atexit
+import sys
 
 import vlc
 
 
 def startFlaskServer(q):
-    app = Flask(__name__)
+    if getattr(sys, 'frozen', False):
+        template_folder = os.path.join(sys._MEIPASS, 'templates')
+        static_folder = os.path.join(sys._MEIPASS, 'static')
+        app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
+    
+    else:
+        app = Flask(__name__)
     
     @app.route("/msg/<msg>")
     def rxMessage(msg):
@@ -35,7 +42,7 @@ def startFlaskServer(q):
     app.run(debug = False, port = 5000)
 
 if __name__ == "__main__":
-
+    mp.freeze_support()
     ctypes.windll.shcore.SetProcessDpiAwareness(1)
 
     def onMessage(msg):
