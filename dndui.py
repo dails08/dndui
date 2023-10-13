@@ -473,11 +473,12 @@ if __name__ == "__main__":
             
             MRL = r"C:\Users\Christopher\Dropbox\CoS\OBS Rework\bg\AT2.jpg"
             
-            self.citation_str_var = tk.StringVar(value = "Citation")
+            self.citation_str_var = tk.StringVar(value = "")
             self.citation_entry = ttk.Entry(self, textvariable = self.citation_str_var)
             self.citation_entry.place(x = 410, y = int(360*preview_scale) + 15, width = int(640*preview_scale))
             
             self.save_citation_btn = ttk.Button(self, text = "Save Citation", command = self.saveCitation)
+            self.save_citation_btn.place(x = 410, y = int(360*preview_scale) + 15 + 30 + 5)
 
 
             
@@ -521,8 +522,16 @@ if __name__ == "__main__":
             self.preview_list_player.play_item_at_index(0)
             
         def saveCitation(self):
-            citation = self.citation_string_var.get()
-            
+            citation = self.citation_str_var.get()
+            selection_iid = self.file_tree.selection()[0]
+            item = self.file_tree.item(selection_iid)
+            if len(self.file_tree.get_children(selection_iid)) > 0:
+                # Don't cite whole folders of media
+                return
+            filename = item['text']
+            self.citations_window.citations_dict[filename] = citation
+            with open("citations_dict.json", "w") as citations_file:
+                json.dump(self.citations_window.citations_dict, citations_file)
 
         def playMedia(self, MRL):
             logger.debug("Sending " + MRL + " to bg window")
@@ -551,10 +560,7 @@ if __name__ == "__main__":
                 filename = filename[4:]
             print(filename)
             self.playMedia(selection_iid)
-            print(selection_iid.split(".")[-1].strip())
-            print(selection_iid.split(".")[-1].strip() in ["mp4", "webm"])
-            if selection_iid.split(".")[-1].strip() in ["mp4", "webm"]:
-                self.citation_window.citeArt(filename)
+            self.citations_window.citeArt(filename)
             
             
         def fileTreeSingleClick(self, event):
@@ -577,8 +583,7 @@ if __name__ == "__main__":
             self.citation_entry.delete(0, tk.END)
             if filename in self.citations_window.citations_dict.keys():
                 creator_name = self.citations_window.citations_dict[filename]
-                citation = filename.split(".")[0] + ": " + creator_name + "\n"
-                self.citation_entry.insert(0, citation)
+                self.citation_entry.insert(0, creator_name)
             self.previewMedia(selection_iid)
 
     vlc_instance = vlc.Instance()
