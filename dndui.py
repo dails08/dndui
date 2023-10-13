@@ -63,18 +63,6 @@ if __name__ == "__main__":
             
            
            
-    class ArtCitationWindow(tk.Toplevel):
-        def __init__(self):
-            super().__init__(height = 500, width = 1500)
-            self.title("Citation Window")
-            
-            self.citations = tk.Text(self)
-            self.citations.place(x = 0, y = 0, height = 500, width = 1500)
-                   
-        def parse_msg(self, msg):
-            logger.debug(msg)
-            if msg[0] == "Audio":
-                citeArt("Audio", msg[1])
 
 
     class InitiativeTab(ttk.Frame):
@@ -461,10 +449,12 @@ if __name__ == "__main__":
 
 
     class BackgroundTab(ttk.Frame):
-        def __init__(self, vlc_instance, background_window, controller):
+        def __init__(self, vlc_instance, background_window,citation_window, controller):
             super().__init__(controller)
             self.vlc_instance = vlc_instance
             self.background_window = background_window
+            
+            self.citation_window = citation_window
             
             self.tree_frame = ttk.Frame(self)
             self.tree_frame.place(x = 0, y = 0, width = 410, height = 500)
@@ -482,6 +472,12 @@ if __name__ == "__main__":
             self.preview_frame.place(x = 410, y = 10, width = int(640*preview_scale), height = int(360*preview_scale))
             
             MRL = r"C:\Users\Christopher\Dropbox\CoS\OBS Rework\bg\AT2.jpg"
+            
+            self.citation_str_var = tk.StringVar(value = "Citation")
+            self.citation_entry = ttk.Entry(self, textvariable = self.citation_str_var)
+            self.citation_entry.place(x = 410, y = int(360*preview_scale) + 15, width = int(640*preview_scale))
+            
+            self.save_citation_btn = ttk.Button(self, text = "Save Citation", command = self.saveCitation)
 
 
             
@@ -523,6 +519,10 @@ if __name__ == "__main__":
             self.preview_media_list = self.vlc_instance.media_list_new([MRL])
             self.preview_list_player.set_media_list(self.media_list)
             self.preview_list_player.play_item_at_index(0)
+            
+        def saveCitation(self):
+            citation = self.citation_string_var.get()
+            
 
         def playMedia(self, MRL):
             logger.debug("Sending " + MRL + " to bg window")
@@ -554,7 +554,7 @@ if __name__ == "__main__":
             print(selection_iid.split(".")[-1].strip())
             print(selection_iid.split(".")[-1].strip() in ["mp4", "webm"])
             if selection_iid.split(".")[-1].strip() in ["mp4", "webm"]:
-                citeArt("Video", filename)
+                self.citation_window.citeArt(filename)
             
             
         def fileTreeSingleClick(self, event):
@@ -650,7 +650,39 @@ if __name__ == "__main__":
                 fq_filename = dirName + "\\" + filename
                 #print("Adding file " + fq_filename + " under " + dirName)
                 background_tab.file_tree.insert(dirName, "end", iid = fq_filename, text = filename)
+           
+
+    class ArtCitationWindow(tk.Toplevel):
+        def __init__(self):
+            super().__init__(height = 500, width = 1500)
+            self.title("Citations Window")
+            if "citations_dict.json" in os.listdir():
+                with open("citations_dict.json", "r") as citation_file:
+                    self.citations_dict = json.load(citation_file)
+            else:
+                self.citations_dict = dict()
+        
+
+            self.session_citations= set()
             
+            self.citations = tk.Text(self)
+            self.citations.place(x = 0, y = 0, height = 500, width = 1500)
+                   
+        def parse_msg(self, msg):
+            logger.debug(msg)
+            if msg[0] == "Audio":
+                citeArt(msg[1])
+           
+        def citeArt(self, filename):
+            #print("To cite:")
+            #print(filename)
+            if filename in self.citations_dict.keys() and filename not in self.session_citations:
+                creator_name = self.citations_dict[filename]
+                citation = filename.split(".")[0] + ": " + creator_name + "\n"
+
+                self.session_citations.add(filename)
+                self.citations.insert(tk.END, citation)
+
     menu_file.add_command(label = "Set Media Location", command = lambda: setMediaLocation(background_tab))
    
 
@@ -665,25 +697,10 @@ if __name__ == "__main__":
     # write_logger_id = logger.add(write_log)
 
 
-    art_window = ArtCitationWindow()
-    citation_dict = json.load(open("citation_dict.json"))
+    citation_window = ArtCitationWindow()
+        
 
-    citation_set = set()
 
-    def citeArt(art_type, filename):
-        global art_window
-        global citation_dict
-        global citation_set
-        print("To cite:")
-        print(filename)
-        if filename in citation_dict.keys():
-            creator_name = citation_dict[filename]
-        else:
-            creator_name = "Unknown"
-        if art_type + filename not in citation_set:
-            citation_set.add(art_type + filename)
-            citation = filename.split(".")[0] + ": " + creator_name + "\n"
-            art_window.citations.insert(tk.END, "(" + art_type + ") " + citation)
 
 
 
@@ -693,7 +710,7 @@ if __name__ == "__main__":
     tab_control = ttk.Notebook(root)
 
     background_window = BackgroundWindow(vlc_instance)
-    background_tab = BackgroundTab(vlc_instance, background_window, tab_control)
+    background_tab = BackgroundTab(vlc_instance, background_window, citation_window, tab_control)
     tab_control.add(background_tab, text = "Background")
 
     initiative_tab = InitiativeTab(tab_control)
