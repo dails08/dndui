@@ -449,12 +449,12 @@ if __name__ == "__main__":
 
 
     class BackgroundTab(ttk.Frame):
-        def __init__(self, vlc_instance, background_window,citation_window, controller):
+        def __init__(self, vlc_instance, background_window,citations_window, controller):
             super().__init__(controller)
             self.vlc_instance = vlc_instance
             self.background_window = background_window
             
-            self.citation_window = citation_window
+            self.citations_window = citations_window
             
             self.tree_frame = ttk.Frame(self)
             self.tree_frame.place(x = 0, y = 0, width = 410, height = 500)
@@ -574,6 +574,11 @@ if __name__ == "__main__":
             while filename.startswith("_ex_"):
                 filename = filename[4:]
             print(filename)
+            self.citation_entry.delete(0, tk.END)
+            if filename in self.citations_window.citations_dict.keys():
+                creator_name = self.citations_window.citations_dict[filename]
+                citation = filename.split(".")[0] + ": " + creator_name + "\n"
+                self.citation_entry.insert(0, citation)
             self.previewMedia(selection_iid)
 
     vlc_instance = vlc.Instance()
