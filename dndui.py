@@ -1,22 +1,14 @@
 import os
 import ctypes
-import json
 # import multiprocessing as mp
-from threading import Timer
 
 import tkinter as tk
 
 from tkinter import filedialog
 from tkinter import ttk
-import tkinter.font as tkFont
 # from PIL import Image, ImageTk, ImageGrab
-import pytweening as pt
 from loguru import logger
 import numpy as np
-import requests
-import gc
-from io import BytesIO
-import pathlib
 
 
 import vlc
