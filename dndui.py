@@ -41,6 +41,19 @@ def startFlaskServer(q):
         
     app.run(debug = False, port = 5000)
 
+CONFIG_FILE = "config.json"
+DEFAULT_MEDIA_ROOT_DIR = r"C:\Users\Christopher\Dropbox\CoS\COS2\working assets\visual assets\bg"
+
+def loadConfig():
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, "r") as config_file:
+            return json.load(config_file)
+    return {}
+
+def saveConfig(config):
+    with open(CONFIG_FILE, "w") as config_file:
+        json.dump(config, config_file)
+
 if __name__ == "__main__":
     mp.freeze_support()
     ctypes.windll.shcore.SetProcessDpiAwareness(1)
@@ -131,10 +144,169 @@ if __name__ == "__main__":
             
             self.copy_encounter_script_btn = ttk.Button(self, text = "Copy Encounter Script", command = self.copyEncounterScript)
             self.copy_encounter_script_btn.place(x = 495, y = 495, width = 300, height = 50)
-            
+
+            self.library_dir = "initiative_library_images"
+            self.library_file = "initiative_library.json"
+            os.makedirs(self.library_dir, exist_ok = True)
+            if os.path.exists(self.library_file):
+                with open(self.library_file, "r") as library_file:
+                    self.library = json.load(library_file)
+            else:
+                self.library = dict()
+
+            self.drag_ghost = None
+            self.drag_name = None
+
+            self.library_label = ttk.Label(self, text = "Library")
+            self.library_label.place(x = 820, y = 0)
+
+            self.library_filter_str_var = tk.StringVar(value = "")
+            self.library_filter_entry = ttk.Entry(self, textvariable = self.library_filter_str_var)
+            self.library_filter_entry.place(x = 820, y = 20, width = 200, height = 25)
+            self.library_filter_str_var.trace_add("write", self.onLibraryFilterChange)
+
+            self.library_list = tk.Listbox(self)
+            self.library_list.place(x = 820, y = 50, width = 200, height = 350)
+            self.refreshLibraryList()
+
+            self.library_list.bind("<<ListboxSelect>>", self.libraryPreview)
+            self.library_list.bind("<ButtonPress-1>", self.libraryDragStart)
+            self.library_list.bind("<B1-Motion>", self.libraryDragMotion)
+            self.library_list.bind("<ButtonRelease-1>", self.libraryDragRelease)
+            self.library_list.bind("<Delete>", self.removeFromLibrary)
+
+            self.library_preview_canvas = tk.Canvas(self, bg = "#000000", width = 100, height = 100)
+            self.library_preview_canvas.place(x = 820, y = 405, width = 100, height = 100)
+
+            self.remove_library_btn = ttk.Button(self, text = "Remove", command = self.removeFromLibrary)
+            self.remove_library_btn.place(x = 820, y = 510, width = 100, height = 30)
+
         def copyEncounterScript(self):
             pyperclip.copy("navigator.clipboard.writeText(document.body.innerHTML);")
-            
+
+        def loadLibraryImage(self, name):
+            filename = self.library.get(name)
+            if filename is None:
+                return None
+            path = os.path.join(self.library_dir, filename)
+            if not os.path.exists(path):
+                return None
+            return Image.open(path)
+
+        def saveToLibrary(self, name, avatar_img):
+            if not name or avatar_img is None or name in self.library:
+                return
+            safe_name = "".join(c if c.isalnum() or c in " _-" else "_" for c in name).strip() or "unnamed"
+            filename = safe_name + ".png"
+            counter = 1
+            while os.path.exists(os.path.join(self.library_dir, filename)):
+                filename = safe_name + "_" + str(counter) + ".png"
+                counter += 1
+            avatar_img.convert("RGBA").save(os.path.join(self.library_dir, filename), "PNG")
+            self.library[name] = filename
+            with open(self.library_file, "w") as library_file:
+                json.dump(self.library, library_file)
+            self.refreshLibraryList()
+
+        def removeFromLibrary(self, event = None):
+            selection = self.library_list.curselection()
+            if not selection:
+                return
+            name = self.library_list.get(selection[0])
+            filename = self.library.pop(name, None)
+            if filename is not None:
+                path = os.path.join(self.library_dir, filename)
+                if os.path.exists(path):
+                    os.remove(path)
+            with open(self.library_file, "w") as library_file:
+                json.dump(self.library, library_file)
+            self.library_preview_canvas.delete("all")
+            self.refreshLibraryList()
+
+        def refreshLibraryList(self):
+            self.library_list.delete(0, tk.END)
+            filter_text = self.library_filter_str_var.get().strip().lower()
+            for name in sorted(self.library.keys()):
+                if filter_text and filter_text not in name.lower():
+                    continue
+                self.library_list.insert(tk.END, name)
+
+        def onLibraryFilterChange(self, *args):
+            self.refreshLibraryList()
+
+        def libraryPreview(self, event):
+            selection = self.library_list.curselection()
+            if not selection:
+                return
+            name = self.library_list.get(selection[0])
+            avatar_img = self.loadLibraryImage(name)
+            if avatar_img is None:
+                return
+            self.library_preview_be = ImageTk.PhotoImage(avatar_img.resize((100,100)))
+            self.library_preview_canvas.delete("all")
+            self.library_preview_canvas.create_image(0, 0, image = self.library_preview_be, anchor = "nw")
+
+        def addFromLibrary(self, name, index):
+            avatar_img = self.loadLibraryImage(name)
+            if avatar_img is None:
+                return
+            index = max(0, min(index, len(self.initiative_group_list)))
+            new_init_group = self.InitiativeGroup(name = name, avatar = avatar_img, canvas = self.display_canvas, location = [2000,0], avatar_size = self.avatar_size, cameo_size = self.cameo_size, upper_buffer = self.upper_buffer, left_buffer = self.left_buffer)
+            self.initiative_list.insert(index, name)
+            self.initiative_group_list.insert(index, new_init_group)
+            self.setInitGroupsSpacing()
+
+        def libraryDragStart(self, event):
+            index = self.library_list.nearest(event.y)
+            if index < 0 or index >= self.library_list.size():
+                return
+            name = self.library_list.get(index)
+            avatar_img = self.loadLibraryImage(name)
+            if avatar_img is None:
+                return
+            self.drag_name = name
+            self.drag_thumb_be = ImageTk.PhotoImage(avatar_img.resize((60,60)))
+            self.drag_ghost = tk.Toplevel(self)
+            self.drag_ghost.overrideredirect(True)
+            self.drag_ghost.attributes("-topmost", True)
+            tk.Label(self.drag_ghost, image = self.drag_thumb_be, bd = 0).pack()
+            self.moveDragGhost(event)
+
+        def libraryDragMotion(self, event):
+            if self.drag_ghost is None:
+                return
+            self.moveDragGhost(event)
+
+        def moveDragGhost(self, event):
+            self.drag_ghost.geometry("+" + str(event.x_root + 10) + "+" + str(event.y_root + 10))
+
+        def libraryDragRelease(self, event):
+            if self.drag_ghost is None:
+                return
+            self.drag_ghost.destroy()
+            self.drag_ghost = None
+
+            name = self.drag_name
+            self.drag_name = None
+            if name is None:
+                return
+
+            target = self.winfo_containing(event.x_root, event.y_root)
+            if target is not self.initiative_list:
+                return
+
+            rel_y = event.y_root - self.initiative_list.winfo_rooty()
+            index = self.initiative_list.size()
+            if index > 0:
+                nearest = self.initiative_list.nearest(rel_y)
+                bbox = self.initiative_list.bbox(nearest)
+                if bbox is not None and rel_y > bbox[1] + bbox[3] / 2:
+                    nearest += 1
+                index = nearest
+
+            self.addFromLibrary(name, index)
+
+
         def clearList(self):
             while self.initiative_list.size() > 0:
                 self.initiative_list.delete(0)
@@ -292,6 +464,7 @@ if __name__ == "__main__":
             for elem in self.render_list:
                 logger.debug(elem[1])
                 self.initiative_group_list.append(self.InitiativeGroup(name = elem[1], avatar = elem[0], canvas = self.display_canvas, location = [0,0], avatar_size = self.avatar_size, cameo_size = self.cameo_size, upper_buffer = self.upper_buffer, left_buffer = self.left_buffer))
+                self.saveToLibrary(elem[1], elem[0])
             self.setInitGroupsSpacing()
                 
         
@@ -320,32 +493,37 @@ if __name__ == "__main__":
         
         def addAboveFcn(self):
             logger.debug("Adding above")
-            # pull selection ix from list box
-            selection = self.initiative_list.curselection()[0]
+            # pull selection ix from list box, defaulting to the top when nothing is selected (e.g. empty list)
+            selection_tuple = self.initiative_list.curselection()
+            selection = selection_tuple[0] if selection_tuple else 0
 
             # create initiativegroup
                 # pull name
             to_name = self.prep_name_str_var.get()
                 # pull img
             to_avatar = self.prep_img
-            new_init_group = self.InitiativeGroup(name = to_name, avatar = to_avatar, canvas = self.display_canvas, location = [2000,0], avatar_size = self.avatar_size, cameo_size = self.cameo_size, upper_buffer = self.upper_buffer, left_buffer = self.left_buffer)    
+            new_init_group = self.InitiativeGroup(name = to_name, avatar = to_avatar, canvas = self.display_canvas, location = [2000,0], avatar_size = self.avatar_size, cameo_size = self.cameo_size, upper_buffer = self.upper_buffer, left_buffer = self.left_buffer)
             # add to list box
             self.initiative_list.insert(selection, to_name)
             # add to initiative group list
             self.initiative_group_list.insert(selection, new_init_group)
+            self.saveToLibrary(to_name, to_avatar)
             # update location and redraw
             self.setInitGroupsSpacing()
             
         def addBelowFcn(self):
             logger.debug("Adding below")
-            selection = self.initiative_list.curselection()[0]
-            
+            # defaults to the top when nothing is selected (e.g. empty list)
+            selection_tuple = self.initiative_list.curselection()
+            insert_index = selection_tuple[0] + 1 if selection_tuple else 0
+
             to_name = self.prep_name_str_var.get()
             to_avatar = self.prep_img
-            new_init_group = self.InitiativeGroup(name = to_name, avatar = to_avatar, canvas = self.display_canvas, location = [2000,0], avatar_size = self.avatar_size, cameo_size = self.cameo_size, upper_buffer = self.upper_buffer, left_buffer = self.left_buffer)    
-            self.initiative_list.insert(selection + 1, to_name)
+            new_init_group = self.InitiativeGroup(name = to_name, avatar = to_avatar, canvas = self.display_canvas, location = [2000,0], avatar_size = self.avatar_size, cameo_size = self.cameo_size, upper_buffer = self.upper_buffer, left_buffer = self.left_buffer)
+            self.initiative_list.insert(insert_index, to_name)
             # add to initiative group list
-            self.initiative_group_list.insert(selection + 1, new_init_group)
+            self.initiative_group_list.insert(insert_index, new_init_group)
+            self.saveToLibrary(to_name, to_avatar)
             # update location and redraw
             self.setInitGroupsSpacing()
             
@@ -449,60 +627,59 @@ if __name__ == "__main__":
 
 
     class BackgroundTab(ttk.Frame):
-        def __init__(self, vlc_instance, background_window,citations_window, controller):
+        def __init__(self, vlc_instance, background_window,citations_window, controller, media_root_dir):
             super().__init__(controller)
             self.vlc_instance = vlc_instance
             self.background_window = background_window
-            
+
             self.citations_window = citations_window
-            
+
+            self.tag_filter_str_var = tk.StringVar(value = "")
+            self.tag_filter_entry = ttk.Entry(self, textvariable = self.tag_filter_str_var)
+            self.tag_filter_entry.place(x = 0, y = 0, width = 400, height = 25)
+            self.tag_filter_str_var.trace_add("write", self.onTagFilterChange)
+
             self.tree_frame = ttk.Frame(self)
-            self.tree_frame.place(x = 0, y = 0, width = 410, height = 500)
+            self.tree_frame.place(x = 0, y = 30, width = 410, height = 470)
             self.file_tree = ttk.Treeview(self.tree_frame)
-            self.file_tree.place(x = 0, y = 0, width = 400, height = 500)
-            
+            self.file_tree.place(x = 0, y = 0, width = 400, height = 470)
+
             scrollbar = ttk.Scrollbar(self.tree_frame, orient = "vertical", command = self.file_tree.yview)
             self.file_tree.configure(yscrollcommand = scrollbar.set)
-            
-            scrollbar.place(x = 395, y = 0, height = 500, width = 15)
-            self.media_root_dir = r"C:\Users\Christopher\Dropbox\CoS\COS2\working assets\visual assets\bg"
-            
+
+            scrollbar.place(x = 395, y = 0, height = 470, width = 15)
+            self.media_root_dir = media_root_dir
+
+            if os.path.exists("tags_dict.json"):
+                with open("tags_dict.json", "r") as tags_file:
+                    self.tags_dict = json.load(tags_file)
+            else:
+                self.tags_dict = dict()
+
             preview_scale = .6
             self.preview_frame = ttk.Frame(self)
             self.preview_frame.place(x = 410, y = 10, width = int(640*preview_scale), height = int(360*preview_scale))
-            
+
             MRL = r"C:\Users\Christopher\Dropbox\CoS\OBS Rework\bg\AT2.jpg"
-            
+
             self.citation_str_var = tk.StringVar(value = "")
             self.citation_entry = ttk.Entry(self, textvariable = self.citation_str_var)
             self.citation_entry.place(x = 410, y = int(360*preview_scale) + 15, width = int(640*preview_scale))
-            
+
             self.save_citation_btn = ttk.Button(self, text = "Save Citation", command = self.saveCitation)
             self.save_citation_btn.place(x = 410, y = int(360*preview_scale) + 15 + 30 + 5)
 
+            self.tags_str_var = tk.StringVar(value = "")
+            self.tags_entry = ttk.Entry(self, textvariable = self.tags_str_var)
+            self.tags_entry.place(x = 410, y = int(360*preview_scale) + 15 + 30 + 5 + 30 + 5, width = int(640*preview_scale))
 
-            
-            parent_dir = ""
-            
-           # def descendTree(dir):
-           #     for dirName, subdirList, fileList in os.walk(
-                
-            for dirName, subdirList, fileList in os.walk(self.media_root_dir):
-                #print("Dir: " + dirName)
-                #print("Adding Dir " + dirName + " under " + parent_dir) 
-                if not self.file_tree.exists(dirName):
-                    self.file_tree.insert("", "end", dirName, text = dirName.split("\\")[-1])
-                for subdir in subdirList:
-                    fq_subdir = dirName + "\\" + subdir
-                    #print("Adding subdir " + fq_subdir + " under " + dirName)
-                    self.file_tree.insert(dirName, "end", iid = fq_subdir, text = subdir)
-                for filename in fileList:
-                    if filename.split(".")[-1] in ["webp"]:
-                        continue
-                    fq_filename = dirName + "\\" + filename
-                    #print("Adding file " + fq_filename + " under " + dirName)
-                    self.file_tree.insert(dirName, "end", iid = fq_filename, text = filename)
-            
+            self.save_tags_btn = ttk.Button(self, text = "Save Tags", command = self.saveTags)
+            self.save_tags_btn.place(x = 410, y = int(360*preview_scale) + 15 + 30 + 5 + 30 + 5 + 30 + 5)
+
+
+
+            self.refreshFileTree()
+
             self.file_tree.bind("<Double-1>", self.fileTreeDoubleClick)
             self.file_tree.bind("<Return>", self.fileTreeDoubleClick)
             self.file_tree.bind("<<TreeviewSelect>>", self.fileTreeSingleClick)
@@ -521,6 +698,56 @@ if __name__ == "__main__":
             self.preview_list_player.set_media_list(self.media_list)
             self.preview_list_player.play_item_at_index(0)
             
+        def populateFileTree(self, media_root_dir, tag_filter = ""):
+            tag_filter = tag_filter.strip().lower()
+
+            dirs = {}
+            for dirName, subdirList, fileList in os.walk(media_root_dir):
+                fileList = [f for f in fileList if f.split(".")[-1] not in ["webp"]]
+                dirs[dirName] = (subdirList, fileList)
+
+            def fileMatches(filename):
+                if not tag_filter:
+                    return True
+                if tag_filter in filename.lower():
+                    return True
+                tags = self.tags_dict.get(filename, [])
+                return any(tag_filter in tag.lower() for tag in tags)
+
+            match_cache = {}
+            def dirHasMatch(dirName):
+                if dirName in match_cache:
+                    return match_cache[dirName]
+                subdirList, fileList = dirs[dirName]
+                has_match = any(fileMatches(f) for f in fileList) or \
+                    any(dirHasMatch(dirName + "\\" + subdir) for subdir in subdirList)
+                match_cache[dirName] = has_match
+                return has_match
+
+            for dirName, (subdirList, fileList) in dirs.items():
+                if tag_filter and not dirHasMatch(dirName):
+                    continue
+                if not self.file_tree.exists(dirName):
+                    self.file_tree.insert("", "end", dirName, text = os.path.basename(dirName))
+                for subdir in subdirList:
+                    fq_subdir = dirName + "\\" + subdir
+                    if tag_filter and not dirHasMatch(fq_subdir):
+                        continue
+                    self.file_tree.insert(dirName, "end", iid = fq_subdir, text = subdir)
+                for filename in fileList:
+                    if not fileMatches(filename):
+                        continue
+                    fq_filename = dirName + "\\" + filename
+                    self.file_tree.insert(dirName, "end", iid = fq_filename, text = filename)
+
+        def refreshFileTree(self):
+            for child in self.file_tree.get_children():
+                self.file_tree.delete(child)
+            self.populateFileTree(self.media_root_dir, self.tag_filter_str_var.get())
+
+        def onTagFilterChange(self, *args):
+            self.refreshFileTree()
+
         def saveCitation(self):
             citation = self.citation_str_var.get()
             selection_iid = self.file_tree.selection()[0]
@@ -530,8 +757,20 @@ if __name__ == "__main__":
                 return
             filename = item['text']
             self.citations_window.citations_dict[filename] = citation
-            with open("citations_dict.json", "w") as citations_file:
+            with open("citation_dict.json", "w") as citations_file:
                 json.dump(self.citations_window.citations_dict, citations_file)
+
+        def saveTags(self):
+            tags = [tag.strip() for tag in self.tags_str_var.get().split(",") if tag.strip()]
+            selection_iid = self.file_tree.selection()[0]
+            item = self.file_tree.item(selection_iid)
+            if len(self.file_tree.get_children(selection_iid)) > 0:
+                # Don't tag whole folders of media
+                return
+            filename = item['text']
+            self.tags_dict[filename] = tags
+            with open("tags_dict.json", "w") as tags_file:
+                json.dump(self.tags_dict, tags_file)
 
         def playMedia(self, MRL):
             logger.debug("Sending " + MRL + " to bg window")
@@ -584,6 +823,9 @@ if __name__ == "__main__":
             if filename in self.citations_window.citations_dict.keys():
                 creator_name = self.citations_window.citations_dict[filename]
                 self.citation_entry.insert(0, creator_name)
+            self.tags_entry.delete(0, tk.END)
+            if filename in self.tags_dict.keys():
+                self.tags_entry.insert(0, ", ".join(self.tags_dict[filename]))
             self.previewMedia(selection_iid)
 
     vlc_instance = vlc.Instance()
@@ -627,9 +869,11 @@ if __name__ == "__main__":
 
 
 
+    config = loadConfig()
+
     root = tk.Tk()
     root.title("The Digital DM")
-    root.geometry("800x600")
+    root.geometry("1050x600")
     root.option_add("*tearOff", False)
     
     menubar = tk.Menu(root)
@@ -641,33 +885,22 @@ if __name__ == "__main__":
     
     def setMediaLocation(background_tab):
         media_root_dir = filedialog.askdirectory(initialdir = "~")
-        
-        for child in background_tab.file_tree.get_children():
-            background_tab.file_tree.delete(child)
-        
-        for dirName, subdirList, fileList in os.walk(media_root_dir):
-            #print("Dir: " + dirName)
-            #print("Adding Dir " + dirName + " under " + parent_dir) 
-            if not background_tab.file_tree.exists(dirName):
-                background_tab.file_tree.insert("", "end", dirName, text = dirName.split("/")[-1])
-            for subdir in subdirList:
-                fq_subdir = dirName + "\\" + subdir
-                #print("Adding subdir " + fq_subdir + " under " + dirName)
-                background_tab.file_tree.insert(dirName, "end", iid = fq_subdir, text = subdir)
-            for filename in fileList:
-                if filename.split(".")[-1] in ["webp"]:
-                    continue
-                fq_filename = dirName + "\\" + filename
-                #print("Adding file " + fq_filename + " under " + dirName)
-                background_tab.file_tree.insert(dirName, "end", iid = fq_filename, text = filename)
-           
+        if not media_root_dir:
+            return
+
+        background_tab.media_root_dir = media_root_dir
+        background_tab.refreshFileTree()
+
+        config["media_root_dir"] = media_root_dir
+        saveConfig(config)
+
 
     class ArtCitationWindow(tk.Toplevel):
         def __init__(self):
             super().__init__(height = 500, width = 1500)
             self.title("Citations Window")
-            if "citations_dict.json" in os.listdir():
-                with open("citations_dict.json", "r") as citation_file:
+            if "citation_dict.json" in os.listdir():
+                with open("citation_dict.json", "r") as citation_file:
                     self.citations_dict = json.load(citation_file)
             else:
                 self.citations_dict = dict()
@@ -720,7 +953,7 @@ if __name__ == "__main__":
     tab_control = ttk.Notebook(root)
 
     background_window = BackgroundWindow(vlc_instance)
-    background_tab = BackgroundTab(vlc_instance, background_window, citation_window, tab_control)
+    background_tab = BackgroundTab(vlc_instance, background_window, citation_window, tab_control, config.get("media_root_dir", DEFAULT_MEDIA_ROOT_DIR))
     tab_control.add(background_tab, text = "Background")
 
     initiative_tab = InitiativeTab(tab_control)
