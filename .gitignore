@@ -3,6 +3,7 @@ initiative_library_images/
 initiative_library.json
 config.json
 tags_dict.json
+citation_dict.json
 env**
 .pyc
 mqttHub-windows-x64*

@@ -1,8 +1,4 @@
-Pillow
-tk
-pytweening
-numpy
-paho-mqtt
+PySide6
 loguru
 pyperclip
 beautifulsoup4
