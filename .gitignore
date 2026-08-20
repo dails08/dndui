@@ -9,3 +9,4 @@ env**
 mqttHub-windows-x64*
 build/
 dist/
+__pycache__/

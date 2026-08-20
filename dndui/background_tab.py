@@ -111,29 +111,29 @@ class BackgroundTab(QWidget):
             fileList = [f for f in fileList if f.split(".")[-1] not in EXCLUDED_EXTENSIONS]
             dirs[dirName] = (subdirList, fileList)
 
-        def fileMatches(filename):
-            if not tag_filter:
-                return True
-            if tag_filter in filename.lower():
-                return True
-            tags = self.tags_dict.get(filename, [])
-            return any(tag_filter in tag.lower() for tag in tags)
+        if tag_filter:
+            self.populateFlatList(dirs, tag_filter)
+        else:
+            self.populateNestedTree(dirs)
 
-        match_cache = {}
+    def fileMatches(self, filename, tag_filter):
+        if tag_filter in filename.lower():
+            return True
+        tags = self.tags_dict.get(filename, [])
+        return any(tag_filter in tag.lower() for tag in tags)
 
-        def dirHasMatch(dirName):
-            if dirName in match_cache:
-                return match_cache[dirName]
-            subdirList, fileList = dirs[dirName]
-            has_match = any(fileMatches(f) for f in fileList) or any(
-                dirHasMatch(dirName + "\\" + subdir) for subdir in subdirList
-            )
-            match_cache[dirName] = has_match
-            return has_match
-
+    def populateFlatList(self, dirs, tag_filter):
         for dirName, (subdirList, fileList) in dirs.items():
-            if tag_filter and not dirHasMatch(dirName):
-                continue
+            for filename in fileList:
+                if not self.fileMatches(filename, tag_filter):
+                    continue
+                fq_filename = dirName + "\\" + filename
+                item = QTreeWidgetItem([filename])
+                item.setData(0, Qt.UserRole, fq_filename)
+                self.file_tree.addTopLevelItem(item)
+
+    def populateNestedTree(self, dirs):
+        for dirName, (subdirList, fileList) in dirs.items():
             if dirName not in self.path_items:
                 item = QTreeWidgetItem([os.path.basename(dirName)])
                 item.setData(0, Qt.UserRole, dirName)
@@ -142,15 +142,11 @@ class BackgroundTab(QWidget):
             parent_item = self.path_items[dirName]
             for subdir in subdirList:
                 fq_subdir = dirName + "\\" + subdir
-                if tag_filter and not dirHasMatch(fq_subdir):
-                    continue
                 item = QTreeWidgetItem([subdir])
                 item.setData(0, Qt.UserRole, fq_subdir)
                 parent_item.addChild(item)
                 self.path_items[fq_subdir] = item
             for filename in fileList:
-                if not fileMatches(filename):
-                    continue
                 fq_filename = dirName + "\\" + filename
                 item = QTreeWidgetItem([filename])
                 item.setData(0, Qt.UserRole, fq_filename)
