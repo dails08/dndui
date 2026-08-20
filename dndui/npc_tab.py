@@ -38,6 +38,10 @@ class NPCTab(QWidget):
         self.current_image = None
         self.current_filename = None
 
+        self.filter_entry = QLineEdit()
+        self.filter_entry.setPlaceholderText("Filter by name or tag...")
+        self.filter_entry.textChanged.connect(self.applyFilter)
+
         self.npc_list = QListWidget()
         self.npc_list.setViewMode(QListWidget.IconMode)
         self.npc_list.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
@@ -50,6 +54,7 @@ class NPCTab(QWidget):
         left_panel = QWidget()
         left_layout = QVBoxLayout(left_panel)
         left_layout.setContentsMargins(0, 0, 0, 0)
+        left_layout.addWidget(self.filter_entry)
         left_layout.addWidget(self.npc_list)
 
         self.name_label = QLabel()
@@ -107,7 +112,15 @@ class NPCTab(QWidget):
                     files.append(os.path.join(dirName, filename))
         return sorted(files, key=lambda p: os.path.basename(p).lower())
 
+    def fileMatches(self, filename, name_filter):
+        if name_filter in filename.lower():
+            return True
+        tags = self.tags_dict.get(filename, [])
+        return any(name_filter in tag.lower() for tag in tags)
+
     def refreshList(self):
+        # Rescans disk and rebuilds icons; only call when the directory contents
+        # may have changed. Filtering alone should use applyFilter().
         self.npc_list.clear()
         if not self.npc_root_dir or not os.path.isdir(self.npc_root_dir):
             return
@@ -118,6 +131,14 @@ class NPCTab(QWidget):
             item = QListWidgetItem(QIcon(to_pixmap(image)), filename)
             item.setData(Qt.UserRole, fq_path)
             self.npc_list.addItem(item)
+
+        self.applyFilter()
+
+    def applyFilter(self):
+        name_filter = self.filter_entry.text().strip().lower()
+        for i in range(self.npc_list.count()):
+            item = self.npc_list.item(i)
+            item.setHidden(bool(name_filter) and not self.fileMatches(item.text(), name_filter))
 
     def onSelectionChanged(self):
         selected = self.npc_list.selectedItems()
