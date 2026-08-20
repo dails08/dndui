@@ -8,6 +8,7 @@ from dndui.background_tab import BackgroundTab
 from dndui.background_window import BackgroundWindow
 from dndui.citation_window import ArtCitationWindow
 from dndui.initiative_tab import InitiativeTab
+from dndui.npc_tab import NPCTab
 
 
 class MainWindow(QMainWindow):
@@ -30,9 +31,13 @@ class MainWindow(QMainWindow):
 
         self.initiative_tab = InitiativeTab()
 
+        npc_root_dir = config.get("npc_root_dir", config_module.DEFAULT_NPC_ROOT_DIR)
+        self.npc_tab = NPCTab(self.citation_window, npc_root_dir)
+
         tabs = QTabWidget()
         tabs.addTab(self.background_tab, "Background")
         tabs.addTab(self.initiative_tab, "Initiative")
+        tabs.addTab(self.npc_tab, "NPCs")
         self.setCentralWidget(tabs)
 
         self._buildMenu()
@@ -43,6 +48,10 @@ class MainWindow(QMainWindow):
         set_media_location_action.triggered.connect(self.setMediaLocation)
         menu_file.addAction(set_media_location_action)
 
+        set_npc_location_action = QAction("Set NPC Location", self)
+        set_npc_location_action.triggered.connect(self.setNPCLocation)
+        menu_file.addAction(set_npc_location_action)
+
     def setMediaLocation(self):
         media_root_dir = QFileDialog.getExistingDirectory(self, "Set Media Location", str(Path.home()))
         if not media_root_dir:
@@ -52,4 +61,15 @@ class MainWindow(QMainWindow):
         self.background_tab.refreshFileTree()
 
         self.config["media_root_dir"] = media_root_dir
+        config_module.save_config(self.config)
+
+    def setNPCLocation(self):
+        npc_root_dir = QFileDialog.getExistingDirectory(self, "Set NPC Location", str(Path.home()))
+        if not npc_root_dir:
+            return
+
+        self.npc_tab.npc_root_dir = npc_root_dir
+        self.npc_tab.refreshList()
+
+        self.config["npc_root_dir"] = npc_root_dir
         config_module.save_config(self.config)

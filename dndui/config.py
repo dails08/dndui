@@ -3,6 +3,7 @@ import os
 
 CONFIG_FILE = "config.json"
 DEFAULT_MEDIA_ROOT_DIR = r"C:\Users\Christopher\Dropbox\CoS\COS2\working assets\visual assets\bg"
+DEFAULT_NPC_ROOT_DIR = r"C:\Users\Christopher\Dropbox\CoS\COS2\working assets\visual assets\npc"
 
 
 def load_config():
