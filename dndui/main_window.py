@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from PySide6.QtGui import QAction
-from PySide6.QtWidgets import QFileDialog, QMainWindow, QTabWidget
+from PySide6.QtWidgets import QApplication, QFileDialog, QMainWindow, QTabWidget
 
 from dndui import config as config_module
 from dndui.background_tab import BackgroundTab
@@ -73,3 +73,10 @@ class MainWindow(QMainWindow):
 
         self.config["npc_root_dir"] = npc_root_dir
         config_module.save_config(self.config)
+
+    def closeEvent(self, event):
+        self.background_window.close()
+        self.citation_window.close()
+        self.initiative_tab.display_window.close()
+        super().closeEvent(event)
+        QApplication.instance().quit()
