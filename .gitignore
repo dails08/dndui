@@ -5,6 +5,7 @@ config.json
 tags_dict.json
 citation_dict.json
 env**
+venv/
 .pyc
 mqttHub-windows-x64*
 build/

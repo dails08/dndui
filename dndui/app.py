@@ -16,16 +16,29 @@ def main():
     app = QApplication(sys.argv)
     app.setStyleSheet(style.load_stylesheet())
 
-    vlc_instance = vlc.Instance()
-    vlc_instance.log_unset()
+    vlc_instance = vlc.Instance(
+        # "--verbose=2",
+    )
+    print("VLC instance:")
+    print(vlc_instance)
+    # vlc_instance.log_unset()
 
     queue = mp.Queue()
 
     logger.debug("Starting Flask process")
     flask_server_process = mp.Process(target=start_flask_server, args=[queue])
-    flask_server_process.start()
+    output_code = flask_server_process.start()
+    logger.debug(f"Startup output: {output_code}")
     logger.debug("Testing Flask process")
-    resp = requests.get("http://localhost:5000/msg/test_message")
+    resp = None
+    while True:
+        try:
+            resp = requests.get("http://localhost:5000/msg/test_message")
+            break
+        except Exception as e:
+            pass
+
+        
     logger.debug("Flask test result: " + str(resp.status_code))
 
     config = config_module.load_config()
