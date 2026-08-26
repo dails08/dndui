@@ -33,7 +33,7 @@ class BackgroundWindow(QWidget):
         self.list_player.play_item_at_index(0)
 
     def playMedia(self, mrl):
-        logger.debug("Received " + mrl + " at bg window")
+        logger.debug("Received " + str(mrl) + " at bg window")
         self.media_list = self.vlc_instance.media_list_new([mrl])
         self.list_player.set_media_list(self.media_list)
         self.list_player.play_item_at_index(0)

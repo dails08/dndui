@@ -1,5 +1,6 @@
 import json
 import os
+from pathlib import Path
 
 import vlc
 from loguru import logger
@@ -127,7 +128,8 @@ class BackgroundTab(QWidget):
             for filename in fileList:
                 if not self.fileMatches(filename, tag_filter):
                     continue
-                fq_filename = dirName + "\\" + filename
+                # fq_filename = dirName + "\\" + filename
+                fq_filename = Path(dirName) / filename
                 item = QTreeWidgetItem([filename])
                 item.setData(0, Qt.UserRole, fq_filename)
                 self.file_tree.addTopLevelItem(item)
@@ -141,13 +143,15 @@ class BackgroundTab(QWidget):
                 self.path_items[dirName] = item
             parent_item = self.path_items[dirName]
             for subdir in subdirList:
-                fq_subdir = dirName + "\\" + subdir
+                # fq_subdir = dirName + "\\" + subdir
+                fq_subdir = Path(dirName) / subdir
                 item = QTreeWidgetItem([subdir])
                 item.setData(0, Qt.UserRole, fq_subdir)
                 parent_item.addChild(item)
                 self.path_items[fq_subdir] = item
             for filename in fileList:
-                fq_filename = dirName + "\\" + filename
+                # fq_filename = dirName + "\\" + filename
+                fq_filename = Path(dirName) / filename
                 item = QTreeWidgetItem([filename])
                 item.setData(0, Qt.UserRole, fq_filename)
                 parent_item.addChild(item)
@@ -159,7 +163,7 @@ class BackgroundTab(QWidget):
         self.populateFileTree(self.media_root_dir, self.tag_filter_entry.text())
 
     def playMedia(self, mrl):
-        logger.debug("Sending " + mrl + " to bg window")
+        logger.debug("Sending " + str(mrl) + " to bg window")
         self.background_window.playMedia(mrl)
 
     def previewMedia(self, mrl):
@@ -199,6 +203,7 @@ class BackgroundTab(QWidget):
         if filename in self.tags_dict.keys():
             self.tags_entry.setText(", ".join(self.tags_dict[filename]))
 
+        print(fq_path)
         self.previewMedia(fq_path)
 
     def saveCitation(self):
